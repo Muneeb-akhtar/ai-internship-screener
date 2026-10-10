@@ -1,0 +1,27 @@
+{
+  "name": "Internship Screener - Ayla",
+  "firstMessageMode": "assistant-speaks-first",
+  "firstMessage": "Hi {{candidate_name}}! I'm Ayla, an AI assistant from {{company_name}}. This screening interview for the {{role}} internship takes about five minutes. The call is recorded and transcribed so our HR team can review it, and people, not AI, make the hiring decisions. Do you agree to continue?",
+  "model": {
+    "provider": "google",
+    "model": "gemini-3.5-flash",
+    "temperature": 0.3,
+    "maxTokens": 300,
+    "messages": [{ "role": "system", "content": "<<loaded from vapi/assistant-prompt.md by scripts/vapi.py>>" }],
+    "tools": [{ "type": "endCall" }]
+  },
+  "voice": {
+    "provider": "vapi",
+    "voiceId": "Clara"
+  },
+  "transcriber": {
+    "provider": "deepgram",
+    "model": "nova-3",
+    "language": "en"
+  },
+  "maxDurationSeconds": 420,
+  "endCallMessage": "Thank you for your time. Goodbye!",
+  "artifactPlan": { "recordingEnabled": true },
+  "serverMessages": ["end-of-call-report"],
+  "metadata": { "project": "ai-internship-screener" }
+}

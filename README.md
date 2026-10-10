@@ -4,7 +4,8 @@ An agentic AI pipeline that screens internship candidates end to end: WhatsApp i
 5-minute browser voice interview (Vapi) → LangGraph decision agent → calendar booking and
 notifications through n8n. **The AI only shortlists; HR makes the final hiring decision.**
 
-> 🚧 Work in progress. Phase 1 (Docker stack) and Phase 2 (LangGraph agent) are done. See [PROGRESS.md](PROGRESS.md).
+> 🚧 Work in progress. Phase 1 (Docker stack), Phase 2 (LangGraph agent) and Phase 3 (Vapi browser
+> interview, see [vapi/README.md](vapi/README.md)) are built. See [PROGRESS.md](PROGRESS.md).
 
 ## Stack
 FastAPI · LangGraph · Gemini/Claude/OpenAI (switchable) · n8n · Postgres 16 · Vapi ·

@@ -6,7 +6,7 @@ Endpoints:
   POST /evaluate               run the Screening Decision Agent on a transcript
   POST /review/{thread_id}     HR's APPROVE/REJECT for a borderline candidate (resumes the graph)
   GET  /evaluations/{thread_id} current result of an evaluation
-Phase 3 adds /interview/{token}.
+  + interview routes (app/interview/routes.py): /interview-links, /interview/{token}, ...
 """
 
 import time
@@ -29,6 +29,9 @@ from app.agent.nodes import ScreeningNodes
 from app.agent.service import NotPendingReview, ScreeningService, ThreadNotFound
 from app.audit import AuditLog
 from app.config import get_settings
+from app.interview.links import LinkStore, PostgresLinkStore
+from app.interview.routes import get_links
+from app.interview.routes import router as interview_router
 from app.llm import build_llm
 from app.logging_config import configure_logging
 from app.schemas import EvaluateRequest, EvaluationResult, ReviewRequest
@@ -60,6 +63,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await checkpointer.setup()  # creates the checkpoint tables on first run (idempotent)
     audit = AuditLog(pool)
     await audit.setup()
+    links = PostgresLinkStore(pool)
+    await links.setup()
+    app.state.links = links
 
     app.state.service = None
     try:
@@ -76,6 +82,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="AI Internship Screener API", version=__version__, lifespan=lifespan)
+app.include_router(interview_router)
 
 
 @app.middleware("http")
@@ -152,16 +159,27 @@ protected = [Depends(require_api_key)]
 
 
 @app.post("/evaluate", tags=["agent"], dependencies=protected)
-async def evaluate(req: EvaluateRequest, service: Service) -> EvaluationResult:
-    """Called by n8n after Vapi's end-of-call report. Synchronous: takes ~5-30 s (LLM calls)."""
+async def evaluate(
+    req: EvaluateRequest, service: Service, links: Annotated[LinkStore, Depends(get_links)]
+) -> EvaluationResult:
+    """Called by n8n after Vapi's end-of-call report. Synchronous: takes ~5-60 s (LLM calls)."""
+    if req.interview_token:
+        link = await links.get(req.interview_token)
+        if link is None or link.candidate_id != req.candidate_id:
+            log.warning("interview_token_mismatch", candidate_id=req.candidate_id)
+            raise HTTPException(403, "interview_token does not belong to this candidate")
     try:
-        return await service.evaluate(req)
+        result = await service.evaluate(req)
     except Exception as exc:
         # The checkpoint keeps the progress; n8n can retry with the same call_id to resume.
         log.exception("evaluation_failed", candidate_id=req.candidate_id)
         raise HTTPException(
             502, f"Evaluation failed: {type(exc).__name__}. Safe to retry."
         ) from exc
+    # An incomplete call leaves the link usable for its remaining attempt
+    if req.interview_token and result.decision != "incomplete":
+        await links.mark_evaluated(req.interview_token, result.thread_id)
+    return result
 
 
 @app.post("/review/{thread_id}", tags=["agent"], dependencies=protected)

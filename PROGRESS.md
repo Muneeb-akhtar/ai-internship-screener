@@ -8,7 +8,7 @@ Running record of the build so any new session (human or AI) can pick up where w
 |---|---|
 | 1. Scaffold + local Docker | ✅ **Done.** All 3 containers healthy, endpoints + DBs verified (2026-10-09) |
 | 2. LangGraph agent | ✅ **Built + verified** with real Gemini and Postgres (2026-10-10). ⏳ Owner to test |
-| 3. Vapi interview page + assistant prompt | Not started |
+| 3. Vapi interview page + assistant prompt | 🟡 Built + tested without Vapi (2026-10-10). ⏳ Needs the owner's Vapi account for a real call |
 | 4. Google Calendar tool | Not started |
 | 5. n8n workflows + Meta WhatsApp Cloud API | Not started |
 | 6. AWS EC2 deployment | Not started (set an AWS Budget alert first) |
@@ -74,9 +74,30 @@ Running record of the build so any new session (human or AI) can pick up where w
   - ISO datetimes lose the "PKT" name → re-attach the zone when formatting.
   - PowerShell 5.1 `Get-Content` adds hidden properties to the JSON → read with `[IO.File]`.
 
+### 2026-10-10: Phase 3, the Vapi voice interview
+- Phase 2 committed as `8717037`. Checked the Vapi Web SDK 2.7.1 types (start(assistantId, overrides),
+  variableValues, metadata, end-of-call report → `artifact.transcript`, `server.headers` for auth).
+- Built:
+  - `vapi/assistant-prompt.md` (voice system prompt), `vapi/assistant.json` (consent in `firstMessage`,
+    google/gemini-3.5-flash, Vapi voice "Clara", deepgram nova-3, 420 s max, recording on, endCall tool), `vapi/README.md`.
+  - `app/interview/`: `questions.py` (fixed questions per role keyword), `links.py` (Postgres `interview_links`
+    table: random 32-character token, 72 h expiry, opened/started/evaluated timestamps, max 2 call starts),
+    `routes.py` (`POST /interview-links`, `GET /candidates/{id}/interview-status`, `GET /interview/{token}`,
+    `POST /interview/{token}/events`).
+  - Templates `interview.html` (Vapi SDK via the jsDelivr ESM build, mic check, captions, timer) and `message.html`.
+  - `/evaluate` now accepts `interview_token`: 403 if it belongs to another candidate, and marks the link
+    completed (except for incomplete calls, so the link's second attempt stays available).
+  - `scripts/vapi.py`: `sync` (assistant from repo files → Vapi API, writes VAPI_ASSISTANT_ID), `link`, `calls`,
+    `evaluate --call` (does by hand what n8n will do).
+- Security choice: the browser and Vapi metadata are untrusted. The token is verified against the DB, the public
+  key is restricted in the Vapi dashboard, and the private key never reaches the container or the browser.
+- Verified: 49 tests pass (9 new). On Docker: created a link, the page returns 503 "not configured" without
+  Vapi keys, and the status endpoint and `interview_links` row are correct.
+
 ### Next steps
-1. Owner tests Phase 2 (`.\scripts\try-evaluate.ps1`).
-2. Phase 3: Vapi assistant prompt + `/interview/{token}` page.
+1. Owner creates a Vapi account and puts `VAPI_PUBLIC_KEY` + `VAPI_PRIVATE_KEY` in `.env` → `scripts/vapi.py sync`
+   → real browser call → `scripts/vapi.py evaluate --call <id>`.
+2. Phase 4: Google Calendar (free/busy + event with a Meet link).
 
 ## Decisions made
 - The repo root is `D:\AI Internship Screener` itself; the Compose project name is `ai-screener`.

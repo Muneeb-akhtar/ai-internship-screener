@@ -15,6 +15,9 @@ class EvaluateRequest(BaseModel):
     # instead of evaluating twice (idempotency - webhooks are often retried).
     call_id: str | None = Field(None, max_length=200)
     call_duration_seconds: float | None = Field(None, ge=0)
+    # From Vapi call metadata. When present, the API checks it belongs to candidate_id
+    # (browser-supplied metadata is never trusted on its own).
+    interview_token: str | None = Field(None, max_length=64)
 
 
 class ReviewRequest(BaseModel):

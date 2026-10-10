@@ -17,3 +17,6 @@ langchain-core==1.6.9
 langchain-google-genai==4.4.1
 langchain-anthropic==1.7.5
 langchain-openai==1.7.0
+
+# HTML templates for the interview page (Phase 3)
+jinja2==3.1.6

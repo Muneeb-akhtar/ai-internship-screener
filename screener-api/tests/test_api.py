@@ -7,6 +7,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from app.agent.graph import build_graph
 from app.agent.nodes import ScreeningNodes
 from app.agent.service import ScreeningService
+from app.interview.links import InMemoryLinkStore
 from app.main import app
 from tests.conftest import TEST_API_KEY, FakeLLM, FakeScheduler, load_transcript, make_scores
 
@@ -19,8 +20,10 @@ def api(request: pytest.FixtureRequest) -> TestClient:
     scores = getattr(request, "param", [make_scores(6, 6, 6, 6)])  # default: borderline
     graph = build_graph(ScreeningNodes(FakeLLM(scores=scores), FakeScheduler()), InMemorySaver())
     app.state.service = ScreeningService(graph, audit=None, llm_model="fake-llm")
+    app.state.links = InMemoryLinkStore()
     yield TestClient(app)
     app.state.service = None
+    app.state.links = None
 
 
 def body(**overrides) -> dict:

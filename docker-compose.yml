@@ -120,6 +120,14 @@ services:
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Voice interview (Phase 3). The PUBLIC key is shown in the browser; the private key is NOT passed here.
+      VAPI_PUBLIC_KEY: ${VAPI_PUBLIC_KEY:-}
+      VAPI_ASSISTANT_ID: ${VAPI_ASSISTANT_ID:-}
+      COMPANY_NAME: ${COMPANY_NAME:-Our Company}
+      INTERNSHIP_DURATION: ${INTERNSHIP_DURATION:-three months}
+      INTERNSHIP_SCHEDULE: ${INTERNSHIP_SCHEDULE:-full-time, Monday to Friday}
+      INTERNSHIP_START: ${INTERNSHIP_START:-next month}
+      INTERNSHIP_FAQ: ${INTERNSHIP_FAQ:-}
       # LangSmith tracing (optional): LangChain reads these automatically
       LANGSMITH_TRACING: ${LANGSMITH_TRACING:-false}
       LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}

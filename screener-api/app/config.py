@@ -52,6 +52,21 @@ class Settings(BaseSettings):
     scheduling_lookahead_working_days: int = 5
     scheduling_min_lead_hours: int = 2  # don't book a slot starting in the next 2 hours
 
+    # ---- Voice interview (Vapi) -------------------------------------------------
+    vapi_public_key: str | None = None  # PUBLIC key: safe in the browser (restrict it in Vapi)
+    vapi_assistant_id: str | None = None
+    interview_link_ttl_hours: int = 72
+
+    # Facts the voice assistant may share with candidates (sent as Vapi variableValues)
+    company_name: str = "Our Company"
+    internship_duration: str = "three months"
+    internship_schedule: str = "full-time, Monday to Friday"
+    internship_start: str = "next month"
+    internship_faq: str = (
+        "Each intern gets a mentor. The internship is hybrid with two office days a week. "
+        "There is a monthly stipend. HR shares exact details with shortlisted candidates."
+    )
+
     @property
     def database_url(self) -> str:
         """libpq connection string used by psycopg (and the LangGraph checkpointer)."""
