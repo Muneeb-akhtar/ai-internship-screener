@@ -1,0 +1,14 @@
+AI: Hi, I'm Ayla, an AI assistant from the hiring team. This screening call takes about five minutes and is recorded so our HR team can review it. Do you agree to continue?
+User: Yeah sure.
+AI: Great. Please introduce yourself briefly.
+User: I'm Kamran. I study, um, second year. That's it.
+AI: Thanks. Technical question: what is the difference between a list and a tuple in Python, and when would you use each?
+User: I don't know. I haven't really done Python. Maybe they're the same thing?
+AI: That's okay. Problem-solving question: how would you find duplicate email addresses in a list of ten thousand customers?
+User: I would just look at them. Or ask someone. I don't know.
+AI: Why do you want this internship?
+User: My friend said I should apply. I need it for the certificate.
+AI: The internship is three months, full-time, starting next month. Are you available?
+User: No, I have classes every day, I can only come maybe on Sundays for a few hours.
+AI: Thank you, Kamran, that's the end of the screening. Goodbye!
+User: Bye.

@@ -113,6 +113,17 @@ services:
       SCREENER_DB_NAME: ${SCREENER_DB_NAME:-screener}
       SCREENER_DB_USER: ${SCREENER_DB_USER:-screener}
       SCREENER_DB_PASSWORD: ${SCREENER_DB_PASSWORD:?Set SCREENER_DB_PASSWORD in .env}
+      # LLM (Phase 2). Only the key for the chosen provider is needed.
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_FALLBACK_MODEL: ${LLM_FALLBACK_MODEL:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # LangSmith tracing (optional): LangChain reads these automatically
+      LANGSMITH_TRACING: ${LANGSMITH_TRACING:-false}
+      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
+      LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-ai-internship-screener}
     depends_on:
       postgres:
         condition: service_healthy

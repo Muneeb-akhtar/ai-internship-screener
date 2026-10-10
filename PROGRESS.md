@@ -7,7 +7,7 @@ Running record of the build so any new session (human or AI) can pick up where w
 | Phase | Status |
 |---|---|
 | 1. Scaffold + local Docker | ✅ **Done.** All 3 containers healthy, endpoints + DBs verified (2026-10-09) |
-| 2. LangGraph agent | Not started (needs a Gemini API key in `.env`) |
+| 2. LangGraph agent | ✅ **Built + verified** with real Gemini and Postgres (2026-10-10). ⏳ Owner to test |
 | 3. Vapi interview page + assistant prompt | Not started |
 | 4. Google Calendar tool | Not started |
 | 5. n8n workflows + Meta WhatsApp Cloud API | Not started |
@@ -48,9 +48,35 @@ Running record of the build so any new session (human or AI) can pick up where w
   `gemini-3.8-flash`, `gemini-3.5-flash`, `gemini-3.5-flash-lite` and `gemini-3.1-flash-lite` work.
   → **Default model for Phase 2: `gemini-3.8-flash`.**
 
+### 2026-10-10: Phase 2, the LangGraph Screening Decision Agent
+- Phase 1 committed as `6aadc14` (local git only, no remote yet).
+- Built: `app/agent/{state,prompts,nodes,graph,service}.py`, `app/llm.py` (Gemini/Claude/OpenAI
+  switch, retry + fallback model), `app/audit.py` (`evaluations` table), `app/schemas.py`,
+  `app/tools/calendar.py` (pure `find_free_slot` + `LocalScheduler`; Google comes in Phase 4),
+  endpoints `/evaluate`, `/review/{thread_id}`, `/evaluations/{thread_id}`, `scripts/try-evaluate.ps1`.
+- Graph: check_transcript → extract_answers → score ⇄ self_check → reject | request_review →
+  human_review (interrupt) | shortlist. Plus an `incomplete` branch for short calls or no consent.
+- Additions beyond the brief, chosen deliberately:
+  - A `check_transcript` guard runs before any LLM call (call < 60 s or < 40 candidate words → incomplete).
+  - No consent → incomplete. Asking for a human → `asked_for_human` flag.
+  - Still low confidence after the one retry → human_review (flag `low_confidence`), so the AI never auto-decides when unsure.
+  - A separate `request_review` node drafts the HR message *before* the interrupt (a node's updates are only checkpointed when it finishes).
+  - Messages with facts (dates, links, scores) are templates; only the rejection text is LLM-drafted (with a template fallback).
+  - `/evaluate` is idempotent per Vapi `call_id`, and resumes from the checkpoint after a crash.
+  - Prompts treat the transcript as untrusted (prompt-injection guard).
+- Verified:
+  - 40 unit tests with a mocked LLM pass; ruff is clean.
+  - Live Gemini on the 3 transcripts: strong 36/40 → shortlist, borderline 22–23/40 → human_review, weak 5–7/40 → reject.
+  - Docker + Postgres: the borderline evaluation paused, **the API container was restarted**, then APPROVE resumed it from the checkpoint → Scheduled. Audit rows and checkpoints confirmed.
+- Issues found and fixed:
+  - `gemini-3.8-flash` returned "503 high demand" → added a fallback model (`gemini-3.5-flash`).
+  - Multi-statement SQL fails with prepared statements → run one statement at a time.
+  - ISO datetimes lose the "PKT" name → re-attach the zone when formatting.
+  - PowerShell 5.1 `Get-Content` adds hidden properties to the JSON → read with `[IO.File]`.
+
 ### Next steps
-1. First git commit.
-2. Phase 2: LangGraph agent.
+1. Owner tests Phase 2 (`.\scripts\try-evaluate.ps1`).
+2. Phase 3: Vapi assistant prompt + `/interview/{token}` page.
 
 ## Decisions made
 - The repo root is `D:\AI Internship Screener` itself; the Compose project name is `ai-screener`.

@@ -1,0 +1,16 @@
+AI: Hi, I'm Ayla, an AI assistant from the hiring team. This screening call takes about five minutes and is recorded so our HR team can review it. Do you agree to continue?
+User: Yes, I agree. Happy to continue.
+AI: Great. Please introduce yourself briefly.
+User: Sure. I'm Sara, a final-year computer science student at FAST Lahore. I've built two small projects in Python: a Flask app for tracking library books and a script that cleans sales data with pandas for my uncle's shop. I enjoy explaining things, so I'm also a teaching assistant for our programming fundamentals course.
+AI: Thanks, Sara. Technical question: what is the difference between a list and a tuple in Python, and when would you use each?
+User: A list is mutable, so you can add, remove or change items, while a tuple is immutable once created. I use a list when the collection changes, like items in a cart, and a tuple for fixed data like coordinates or a database row. Tuples can also be dictionary keys because they're hashable, and they're slightly faster.
+AI: Good. Problem-solving question: how would you find duplicate email addresses in a list of ten thousand customers?
+User: I'd first normalise the emails, so lowercase and strip spaces. Then I'd loop once and keep a set of emails I've already seen; if an email is already in the set, I add it to a duplicates list. That's linear time instead of comparing every pair. I'd test it with a small list first, including edge cases like empty strings.
+AI: Why do you want this internship?
+User: I want to work on real backend code with code reviews from experienced engineers. I read your engineering blog post about your data pipeline and I'd love to learn how you test and deploy it. I'm aiming for a backend role after graduation, so this fits exactly.
+AI: The internship is three months, full-time, starting next month. Are you available?
+User: Yes. My final exams finish in two weeks, so I can commit full-time for the whole three months.
+AI: Do you have any questions about the internship?
+User: Yes, will interns get a mentor, and is it on-site or remote?
+AI: Each intern gets a mentor, and it's hybrid with two office days a week. Thank you, Sara, that's the end of the screening. The HR team will be in touch soon. Goodbye!
+User: Thank you so much, goodbye!

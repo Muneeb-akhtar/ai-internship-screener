@@ -16,7 +16,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # Locally (outside Docker) values can also come from a .env file next to
     # where you run the app. Inside Docker, Compose passes real env vars.
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # env_ignore_empty: "LLM_MODEL=" (empty) means "use the default", not "".
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_ignore_empty=True)
 
     app_env: Literal["dev", "test", "prod"] = "dev"
     log_level: str = "INFO"
@@ -31,6 +32,25 @@ class Settings(BaseSettings):
     screener_db_name: str = "screener"
     screener_db_user: str = "screener"
     screener_db_password: SecretStr
+
+    # ---- LLM -----------------------------------------------------------------
+    llm_provider: Literal["gemini", "anthropic", "openai"] = "gemini"
+    llm_model: str | None = None  # None -> provider default (see app/llm.py)
+    llm_fallback_model: str | None = None  # tried if the main model keeps failing (e.g. overloaded)
+    llm_temperature: float = 0.0  # 0 = as consistent as possible (same rubric for everyone)
+    llm_timeout_seconds: float = 60.0
+    llm_max_retries: int = 3
+    google_api_key: SecretStr | None = None
+    anthropic_api_key: SecretStr | None = None
+    openai_api_key: SecretStr | None = None
+
+    # ---- Interview scheduling (HR's calendar) ----------------------------------
+    hr_timezone: str = "Asia/Karachi"
+    work_day_start_hour: int = 10  # first slot starts at 10:00
+    work_day_end_hour: int = 17  # last slot must END by 17:00
+    interview_slot_minutes: int = 30
+    scheduling_lookahead_working_days: int = 5
+    scheduling_min_lead_hours: int = 2  # don't book a slot starting in the next 2 hours
 
     @property
     def database_url(self) -> str:

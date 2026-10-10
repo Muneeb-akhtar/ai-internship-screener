@@ -1,0 +1,16 @@
+AI: Hi, I'm Ayla, an AI assistant from the hiring team. This screening call takes about five minutes and is recorded so our HR team can review it. Do you agree to continue?
+User: Yes, okay.
+AI: Great. Please introduce yourself briefly.
+User: I'm Bilal. I did a BS in IT from a university in Multan last year. I have done some online courses in Python and I made a calculator program. Right now I am looking for a job or internship.
+AI: Thanks, Bilal. Technical question: what is the difference between a list and a tuple in Python, and when would you use each?
+User: A list uses square brackets and a tuple uses round brackets. I think a tuple cannot be changed after you make it. I mostly use lists, I'm not sure when to use a tuple exactly.
+AI: Okay. Problem-solving question: how would you find duplicate email addresses in a list of ten thousand customers?
+User: I would take each email and compare it with all the other emails, and if it's the same then it's a duplicate. Maybe I can sort them first so the same ones come together, then check neighbours.
+AI: Why do you want this internship?
+User: I want to get experience in a software company and improve my skills. Your company is good and I think I can learn a lot of things here.
+AI: The internship is three months, full-time, starting next month. Are you available?
+User: Yes, I'm available full-time.
+AI: Do you have any questions?
+User: Is the internship paid?
+AI: Yes, there is a monthly stipend. Thank you, Bilal, that's the end of the screening. The HR team will be in touch. Goodbye!
+User: Okay thank you, bye.
