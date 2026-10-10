@@ -1,0 +1,153 @@
+# =============================================================================
+# AI Internship Screener - base Docker Compose stack (used in dev AND prod)
+#
+#   Local dev : docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#   Production: docker compose --profile prod up -d        (adds Caddy, Phase 6)
+#
+# Key ideas:
+# - Every service joins the same private network, so containers reach each
+#   other by service name (e.g. the API connects to "postgres:5432").
+# - Nothing is published to the host here. The dev override opens ports on
+#   127.0.0.1; in prod only Caddy (80/443) is public.
+# - ${VAR:?msg} makes Compose refuse to start if a required variable is
+#   missing from .env -> fail fast instead of running with empty secrets.
+# - healthchecks + depends_on(condition: service_healthy) give a clean
+#   start order: postgres -> n8n / screener-api.
+# =============================================================================
+name: ai-screener
+
+services:
+  # ---------------------------------------------------------------------------
+  # Postgres 16: one server, two databases (see postgres/init/):
+  #   n8n       -> n8n's own data (workflows, credentials, executions)
+  #   screener  -> LangGraph checkpoints + evaluation audit log
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: postgres
+      # Read only by postgres/init/01-create-dbs.sh on FIRST start (empty volume)
+      N8N_DB_NAME: ${N8N_DB_NAME:-n8n}
+      N8N_DB_USER: ${N8N_DB_USER:-n8n}
+      N8N_DB_PASSWORD: ${N8N_DB_PASSWORD:?Set N8N_DB_PASSWORD in .env}
+      SCREENER_DB_NAME: ${SCREENER_DB_NAME:-screener}
+      SCREENER_DB_USER: ${SCREENER_DB_USER:-screener}
+      SCREENER_DB_PASSWORD: ${SCREENER_DB_PASSWORD:?Set SCREENER_DB_PASSWORD in .env}
+      TZ: ${TZ:-Asia/Karachi}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # n8n: workflow automation (WhatsApp, Sheets, Calendar, Gmail, webhooks)
+  # ---------------------------------------------------------------------------
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-2.42.6}
+    restart: unless-stopped
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${N8N_DB_NAME:-n8n}
+      DB_POSTGRESDB_USER: ${N8N_DB_USER:-n8n}
+      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD:?Set N8N_DB_PASSWORD in .env}
+      # Encrypts the credentials you save in n8n. NEVER change it after first
+      # start, or n8n can no longer decrypt saved credentials.
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Set N8N_ENCRYPTION_KEY in .env}
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      N8N_PORT: 5678
+      # Public base URL n8n shows for webhook nodes (tunnel URL locally, domain in prod)
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678/}
+      GENERIC_TIMEZONE: ${TZ:-Asia/Karachi}
+      TZ: ${TZ:-Asia/Karachi}
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      # Keep the execution history from growing forever
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: 336 # hours (14 days)
+      # Workflows call our API by its service name on the internal network
+      SCREENER_API_URL: http://screener-api:8000
+      SCREENER_API_KEY: ${SCREENER_API_KEY:?Set SCREENER_API_KEY in .env}
+      # Allow {{ $env.SCREENER_API_KEY }} inside workflow expressions
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # The n8n image always has node, so use it instead of curl/wget
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:5678/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # screener-api: FastAPI + LangGraph "Screening Decision Agent"
+  # ---------------------------------------------------------------------------
+  screener-api:
+    build:
+      context: ./screener-api
+    image: ${SCREENER_API_IMAGE:-ai-screener/screener-api:local}
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TZ: ${TZ:-Asia/Karachi}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+      SCREENER_API_KEY: ${SCREENER_API_KEY:?Set SCREENER_API_KEY in .env}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      SCREENER_DB_NAME: ${SCREENER_DB_NAME:-screener}
+      SCREENER_DB_USER: ${SCREENER_DB_USER:-screener}
+      SCREENER_DB_PASSWORD: ${SCREENER_DB_PASSWORD:?Set SCREENER_DB_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=4).status == 200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # Caddy: HTTPS reverse proxy. Only runs with `--profile prod` (Phase 6).
+  # ---------------------------------------------------------------------------
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["prod"]
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      n8n:
+        condition: service_healthy
+      screener-api:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  n8n_data:
+  caddy_data:
+  caddy_config:

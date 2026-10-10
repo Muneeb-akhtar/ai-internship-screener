@@ -1,0 +1,8 @@
+# Runtime dependencies (pinned for reproducible builds).
+# LangGraph / LangChain / LLM SDKs are added in Phase 2.
+fastapi==0.143.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.0
+pydantic-settings==2.15.0
+structlog==26.1.0
+psycopg[binary]==3.3.6

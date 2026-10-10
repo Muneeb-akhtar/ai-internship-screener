@@ -1,0 +1,32 @@
+# =============================================================================
+# Local development overrides. Compose MERGES this file on top of
+# docker-compose.yml when you pass both with -f:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#
+# Ports bind to 127.0.0.1 only, so nothing is reachable from your Wi-Fi network.
+# =============================================================================
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432" # for a DB GUI (DBeaver, pgAdmin, VS Code)
+
+  n8n:
+    ports:
+      - "127.0.0.1:5678:5678"
+    environment:
+      # Allow the login cookie over plain http://localhost
+      N8N_SECURE_COOKIE: "false"
+
+  screener-api:
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      APP_ENV: dev
+      # File-change events don't cross from Windows into containers reliably,
+      # so make uvicorn's reloader poll for changes instead
+      WATCHFILES_FORCE_POLLING: "true"
+    volumes:
+      # Mount your source code so edits show up without a rebuild
+      - ./screener-api/app:/code/app
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/code/app", "--no-access-log"]
