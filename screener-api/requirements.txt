@@ -20,3 +20,7 @@ langchain-openai==1.7.0
 
 # HTML templates for the interview page (Phase 3)
 jinja2==3.1.6
+
+# Google Calendar (Phase 4)
+google-api-python-client==2.201.0
+google-auth==2.61.0

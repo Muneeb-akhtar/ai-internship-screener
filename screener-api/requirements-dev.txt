@@ -3,3 +3,5 @@
 pytest==9.1.1
 httpx==0.28.1
 ruff==0.17.0
+# One-time Google OAuth consent on your PC (scripts/google_auth.py)
+google-auth-oauthlib==1.5.0

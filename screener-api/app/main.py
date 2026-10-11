@@ -36,7 +36,7 @@ from app.llm import build_llm
 from app.logging_config import configure_logging
 from app.schemas import EvaluateRequest, EvaluationResult, ReviewRequest
 from app.security import require_api_key
-from app.tools.calendar import LocalScheduler
+from app.tools.calendar import build_scheduler
 
 log = structlog.get_logger()
 
@@ -70,7 +70,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.service = None
     try:
         llm = build_llm(settings)
-        graph = build_graph(ScreeningNodes(llm, LocalScheduler(settings)), checkpointer)
+        graph = build_graph(ScreeningNodes(llm, build_scheduler(settings)), checkpointer)
         app.state.service = ScreeningService(graph, audit, llm.model_name)
     except Exception as exc:  # e.g. missing API key: keep /health up, /evaluate returns 503
         log.error("agent_not_configured", error=str(exc))

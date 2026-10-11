@@ -216,13 +216,15 @@ class ScreeningNodes:
         }
 
     # ---------------------------------------------------------------- outcomes
-    async def shortlist(self, state: ScreeningState) -> dict:
+    async def shortlist(self, state: ScreeningState, config: RunnableConfig) -> dict:
         """Book the next free slot (tool call) and draft messages for candidate and HR."""
         s = state["scores"]
         booked = await self.scheduler.book_interview(
             candidate_name=state.get("candidate_name", ""),
             candidate_email=state.get("candidate_email"),
             role=state["role"],
+            # thread id = idempotency key: a retried node never books a 2nd event
+            booking_key=config["configurable"]["thread_id"],
             description=f"Internship interview ({state['role']}).\n\nAI screening summary: {s['summary']}",
         )
         name = _first_name(state)

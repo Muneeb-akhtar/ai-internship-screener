@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     scheduling_lookahead_working_days: int = 5
     scheduling_min_lead_hours: int = 2  # don't book a slot starting in the next 2 hours
 
+    # ---- Google Calendar (Phase 4) ---------------------------------------------------
+    google_calendar_id: str = "primary"  # "primary" = the main calendar of the authorised account
+    google_token_file: str = "/run/secrets/google-token.json"  # from scripts/google_auth.py
+    calendar_invite_candidate: bool = True  # add the candidate as attendee (Google emails them)
+
     # ---- Voice interview (Vapi) -------------------------------------------------
     vapi_public_key: str | None = None  # PUBLIC key: safe in the browser (restrict it in Vapi)
     vapi_assistant_id: str | None = None

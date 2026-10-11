@@ -128,10 +128,17 @@ services:
       INTERNSHIP_SCHEDULE: ${INTERNSHIP_SCHEDULE:-full-time, Monday to Friday}
       INTERNSHIP_START: ${INTERNSHIP_START:-next month}
       INTERNSHIP_FAQ: ${INTERNSHIP_FAQ:-}
+      # Google Calendar (Phase 4): token file comes from the ./secrets mount below
+      GOOGLE_CALENDAR_ID: ${GOOGLE_CALENDAR_ID:-primary}
+      GOOGLE_TOKEN_FILE: /run/secrets/google-token.json
+      CALENDAR_INVITE_CANDIDATE: ${CALENDAR_INVITE_CANDIDATE:-true}
       # LangSmith tracing (optional): LangChain reads these automatically
       LANGSMITH_TRACING: ${LANGSMITH_TRACING:-false}
       LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
       LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-ai-internship-screener}
+    volumes:
+      # Git-ignored folder with secret files (Google token). Read-only inside the container.
+      - ./secrets:/run/secrets:ro
     depends_on:
       postgres:
         condition: service_healthy
