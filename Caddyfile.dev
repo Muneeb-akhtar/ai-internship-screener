@@ -8,8 +8,9 @@
 		reverse_proxy screener-api:8000
 	}
 
-	# n8n production + test webhooks (Vapi end-of-call report etc.)
-	@n8n path /webhook/* /webhook-test/*
+	# Only the n8n webhook that an outside service calls (Vapi). The hr-review and
+	# whatsapp-inbound webhooks are called by the API inside Docker, so they stay private.
+	@n8n path /webhook/vapi-end-of-call /webhook-test/vapi-end-of-call
 	handle @n8n {
 		reverse_proxy n8n:5678
 	}

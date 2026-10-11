@@ -81,6 +81,15 @@ services:
       SCREENER_API_KEY: ${SCREENER_API_KEY:?Set SCREENER_API_KEY in .env}
       # Allow {{ $env.SCREENER_API_KEY }} inside workflow expressions
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      # Used by the workflows (n8n/workflows, built by scripts/n8n_workflows.py)
+      VAPI_WEBHOOK_SECRET: ${VAPI_WEBHOOK_SECRET:-}
+      GOOGLE_SHEET_ID: ${GOOGLE_SHEET_ID:-}
+      META_WA_ACCESS_TOKEN: ${META_WA_ACCESS_TOKEN:-}
+      META_WA_PHONE_NUMBER_ID: ${META_WA_PHONE_NUMBER_ID:-}
+      META_GRAPH_VERSION: ${META_GRAPH_VERSION:-v24.0}
+      WA_TEMPLATE_LANG: ${WA_TEMPLATE_LANG:-en}
+      HR_WHATSAPP_NUMBER: ${HR_WHATSAPP_NUMBER:-}
+      HR_EMAIL: ${HR_EMAIL:-}
     volumes:
       - n8n_data:/home/node/.n8n
     depends_on:
