@@ -8,7 +8,7 @@ Running record of the build so any new session (human or AI) can pick up where w
 |---|---|
 | 1. Scaffold + local Docker | ✅ **Done.** All 3 containers healthy, endpoints + DBs verified (2026-10-09) |
 | 2. LangGraph agent | ✅ **Built + verified** with real Gemini and Postgres (2026-10-10). ⏳ Owner to test |
-| 3. Vapi interview page + assistant prompt | 🟡 Built + tested without Vapi (2026-10-10). ⏳ Needs the owner's Vapi account for a real call |
+| 3. Vapi interview page + assistant prompt | ✅ **Done.** Real browser interview → transcript → agent decision verified (2026-10-11) |
 | 4. Google Calendar tool | Not started |
 | 5. n8n workflows + Meta WhatsApp Cloud API | Not started |
 | 6. AWS EC2 deployment | Not started (set an AWS Budget alert first) |
@@ -94,10 +94,30 @@ Running record of the build so any new session (human or AI) can pick up where w
 - Verified: 49 tests pass (9 new). On Docker: created a link, the page returns 503 "not configured" without
   Vapi keys, and the status endpoint and `interview_links` row are correct.
 
+### 2026-10-11: Phase 3 real-call testing
+- Created the Vapi account (5 credits) and the keys in `.env`. `vapi.py sync` created the assistant
+  `c746333d-…` ("Internship Screener - Ayla").
+- Vapi's API is behind Cloudflare, which blocks the `Python-urllib` User-Agent (error 1010) → `vapi.py` now sends its own.
+- Calls 1 and 2 ended with `silence-timed-out` after 3 min and 95 s. Analysing the stereo recording
+  (`artifact.presignedStereoUrl`; channel 0 = candidate) showed the candidate's speech at −45 to −75 dBFS
+  with gaps of digital silence: a quiet built-in laptop mic plus speaker echo, with Chrome's default
+  noise suppression and echo cancellation cutting the voice.
+- Fixes:
+  - Deepgram `en-IN` + keyterms + endpointing 300, `startSpeakingPlan.waitSeconds` 1.2, `silenceTimeoutSeconds` 40.
+  - Vapi's smart denoising is off (it suppressed quiet speech).
+  - The page opens the mic itself (echo cancellation on, noise suppression off, auto gain on) and passes the track via
+    `new Vapi(key, undefined, undefined, { audioSource: track })`. Added a pre-call mic test meter and picker.
+  - Vapi emits `error` on a normal server-side hangup → the page now waits for `call-end`.
+- **Call 3: 288 s, `customer-ended-call`, $0.38, full transcript.** Ayla followed the script (consent, fixed
+  questions, no hints, answered the FAQ only from the given facts, deferred an unknown question to HR).
+  `vapi.py evaluate` → 19/40 (C6 T6 P1 M6, available, confidence 0.90) → **reject**. The link was marked completed.
+- Note: 19/40 is one point under the human-review band. The candidate skipped one question and was
+  auto-rejected. That's correct per the brief's rule, but worth an owner decision (see next steps).
+
 ### Next steps
-1. Owner creates a Vapi account and puts `VAPI_PUBLIC_KEY` + `VAPI_PRIVATE_KEY` in `.env` → `scripts/vapi.py sync`
-   → real browser call → `scripts/vapi.py evaluate --call <id>`.
-2. Phase 4: Google Calendar (free/busy + event with a Meet link).
+1. Owner decision: should near-threshold rejects (e.g. 17–19) or any skipped question go to human review?
+2. Owner: rotate the Vapi private key (it was shared in chat).
+3. Phase 4: Google Calendar (free/busy + event with a Meet link).
 
 ## Decisions made
 - The repo root is `D:\AI Internship Screener` itself; the Compose project name is `ai-screener`.
