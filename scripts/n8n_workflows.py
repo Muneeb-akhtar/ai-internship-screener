@@ -160,7 +160,7 @@ def http(method: str, url: str, *, json_body: str | None = None, api_key: bool =
 
 
 RETRY = {"retryOnFail": True, "maxTries": 3, "waitBetweenTries": 3000}
-WA_URL = "=https://graph.facebook.com/{{ $env.META_GRAPH_VERSION || 'v24.0' }}/{{ $env.META_WA_PHONE_NUMBER_ID }}/messages"
+WA_URL = "=https://graph.facebook.com/{{ $env.META_GRAPH_VERSION || 'v25.0' }}/{{ $env.META_WA_PHONE_NUMBER_ID }}/messages"
 
 
 def wa_send(wf: WF, name: str, pos: tuple[int, int]) -> str:

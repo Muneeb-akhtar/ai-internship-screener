@@ -2,7 +2,7 @@
   "name": "1 - Invite new candidates",
   "nodes": [
     {
-      "id": "32ed0406-404d-44a5-8e4c-ca29f1eb186d",
+      "id": "9dcbda4a-043a-42da-bcdd-6cc801d38b5f",
       "name": "Every 5 minutes",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -22,7 +22,7 @@
       }
     },
     {
-      "id": "833869ff-81cd-434e-8f7e-bc3def03a6af",
+      "id": "6fe0263d-f816-4042-919c-54ae5ff322a1",
       "name": "Get new candidates",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -63,7 +63,7 @@
       }
     },
     {
-      "id": "f2cfad78-877c-453f-9920-5287e9be2be6",
+      "id": "30b00c83-965d-4351-b07c-adb34ee0b7bf",
       "name": "Create interview link",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -95,7 +95,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "0ae187b3-09aa-4378-a5d6-b13841d1b0df",
+      "id": "82af8d3c-677c-4269-97b6-d8a26d55d1a9",
       "name": "Build invite",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -109,7 +109,7 @@
       }
     },
     {
-      "id": "a662ed60-fdc6-4414-8a5b-aafa4d38f714",
+      "id": "c8a6c66c-4799-47e6-8537-0f841ddb74f6",
       "name": "Send WhatsApp invite",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -147,7 +147,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "a7c451eb-f8fc-4f21-b7d0-54793d979f1d",
+      "id": "53914e1a-9bca-4e54-8356-9761c7e257f7",
       "name": "Sheet fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -161,7 +161,7 @@
       }
     },
     {
-      "id": "39b6c519-a2e7-444b-b824-1222e547818c",
+      "id": "1cc22ffd-c615-4ab9-a120-6c62e3f5c5d6",
       "name": "Update sheet",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,

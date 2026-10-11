@@ -2,7 +2,7 @@
   "name": "6 - Reminders and expiry",
   "nodes": [
     {
-      "id": "e713e138-bb30-401d-8264-d2ca03d80929",
+      "id": "1039e8a0-956c-4587-afda-f3290f0b179a",
       "name": "Every hour",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -22,7 +22,7 @@
       }
     },
     {
-      "id": "43c74648-1955-4810-9c2c-72cbbab9d694",
+      "id": "b6d6e883-f5c3-446a-98a3-992a8b01b007",
       "name": "Get invited candidates",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -63,7 +63,7 @@
       }
     },
     {
-      "id": "4cd8f13d-70ff-479f-9139-0f4ce48f9bee",
+      "id": "8d5c359e-2e95-4643-8bd8-3be453e74e4a",
       "name": "Link status",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -98,7 +98,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "53801577-bc5c-4f67-82bd-e7b471dedf59",
+      "id": "80e76e1c-30e4-465a-b6f6-b5863539a179",
       "name": "Decide",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -111,7 +111,7 @@
       }
     },
     {
-      "id": "5ab3ab12-6a52-44b0-a4d6-457adac6fec5",
+      "id": "a1c44d2a-ada8-45e8-a7ce-e1e676b34d24",
       "name": "Send reminder?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -129,7 +129,7 @@
           },
           "conditions": [
             {
-              "id": "bcb7dd96-e272-4821-9b41-967abcac8674",
+              "id": "de953d2a-ca99-40b7-966f-e3100911996e",
               "leftValue": "={{ !!$json.wa }}",
               "rightValue": "",
               "operator": {
@@ -145,7 +145,7 @@
       }
     },
     {
-      "id": "51d1fd8c-0dbe-4f3a-b521-5c585a697993",
+      "id": "343a246e-7638-4b24-9e14-ca875acc3ad5",
       "name": "Send reminder",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -183,7 +183,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "bba601a4-3d3d-4bf0-a013-732464539ec9",
+      "id": "09a82cef-b471-4db1-8bb9-9c8a0e8d444a",
       "name": "Reminded fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -196,7 +196,7 @@
       }
     },
     {
-      "id": "40f9fb4b-4eff-478c-a3ca-001e27e96bb6",
+      "id": "de5d2554-123d-44a2-94b8-f711191667ba",
       "name": "Expired fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -209,7 +209,7 @@
       }
     },
     {
-      "id": "685820e9-5f55-4cfe-be76-9fc7ff3b630a",
+      "id": "2c2cf5fe-4a0d-480e-b616-58ba71b34eac",
       "name": "Update sheet",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
