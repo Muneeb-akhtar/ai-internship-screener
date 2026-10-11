@@ -22,7 +22,8 @@
     "keyterm": ["Python", "tuple", "list", "dictionary", "pandas", "Flask", "Django", "JavaScript", "SQL", "internship", "Ayla"]
   },
   "startSpeakingPlan": { "waitSeconds": 1.2 },
-  "backgroundSpeechDenoisingPlan": { "smartDenoisingPlan": { "enabled": true } },
+  "backgroundSpeechDenoisingPlan": { "smartDenoisingPlan": { "enabled": false } },
+  "silenceTimeoutSeconds": 40,
   "maxDurationSeconds": 420,
   "endCallMessage": "Thank you for your time. Goodbye!",
   "artifactPlan": { "recordingEnabled": true },
