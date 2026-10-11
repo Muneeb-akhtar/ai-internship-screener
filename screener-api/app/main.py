@@ -39,6 +39,7 @@ from app.recordings import router as recordings_router
 from app.schemas import EvaluateRequest, EvaluationResult, ReviewRequest
 from app.security import require_api_key
 from app.tools.calendar import build_scheduler
+from app.whatsapp import router as whatsapp_router
 
 log = structlog.get_logger()
 
@@ -86,6 +87,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="AI Internship Screener API", version=__version__, lifespan=lifespan)
 app.include_router(interview_router)
 app.include_router(recordings_router)
+app.include_router(whatsapp_router)
 
 
 @app.middleware("http")

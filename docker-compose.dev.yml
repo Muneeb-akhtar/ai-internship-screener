@@ -30,3 +30,28 @@ services:
       # Mount your source code so edits show up without a rebuild
       - ./screener-api/app:/code/app
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/code/app", "--no-access-log"]
+
+  # ---------------------------------------------------------------------------
+  # Public HTTPS for local testing (Vapi, Meta and phones must reach your PC).
+  # Opt-in:  docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile tunnel up -d
+  # Then:    .\screener-api\.venv\Scripts\python.exe scripts\dev_tunnel.py   (updates .env + Vapi)
+  # Cloudflare "quick tunnel": no account needed, but the URL changes every time the
+  # tunnel container restarts - leave it running while you test.
+  # ---------------------------------------------------------------------------
+  caddy-dev:
+    image: caddy:2.11.7-alpine
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - screener-api
+      - n8n
+
+  tunnel:
+    image: cloudflare/cloudflared:2026.9.3
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "--url", "http://caddy-dev:8080"]
+    depends_on:
+      - caddy-dev

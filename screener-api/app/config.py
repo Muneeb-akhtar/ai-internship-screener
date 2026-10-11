@@ -64,6 +64,12 @@ class Settings(BaseSettings):
     vapi_private_key: SecretStr | None = None
     interview_link_ttl_hours: int = 72
 
+    # ---- WhatsApp (Meta Cloud API) webhook + n8n (Phase 5) ----------------------------
+    meta_app_secret: SecretStr | None = None  # verifies X-Hub-Signature-256 on incoming webhooks
+    meta_webhook_verify_token: SecretStr | None = None  # Meta's GET verification handshake
+    hr_whatsapp_number: str | None = None  # only this number can APPROVE/REJECT
+    n8n_internal_url: str = "http://n8n:5678"  # n8n inside the Docker network
+
     # Facts the voice assistant may share with candidates (sent as Vapi variableValues)
     company_name: str = "Our Company"
     internship_duration: str = "three months"

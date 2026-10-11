@@ -130,6 +130,10 @@ services:
       INTERNSHIP_SCHEDULE: ${INTERNSHIP_SCHEDULE:-full-time, Monday to Friday}
       INTERNSHIP_START: ${INTERNSHIP_START:-next month}
       INTERNSHIP_FAQ: ${INTERNSHIP_FAQ:-}
+      # WhatsApp webhook (Phase 5): signature check + who may APPROVE/REJECT
+      META_APP_SECRET: ${META_APP_SECRET:-}
+      META_WEBHOOK_VERIFY_TOKEN: ${META_WEBHOOK_VERIFY_TOKEN:-}
+      HR_WHATSAPP_NUMBER: ${HR_WHATSAPP_NUMBER:-}
       # Google Calendar (Phase 4): token file comes from the ./secrets mount below
       GOOGLE_CALENDAR_ID: ${GOOGLE_CALENDAR_ID:-primary}
       GOOGLE_TOKEN_FILE: /run/secrets/google-token.json

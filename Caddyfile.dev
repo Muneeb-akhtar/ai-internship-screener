@@ -1,0 +1,20 @@
+# Local-dev router in front of the Cloudflare tunnel (docker compose --profile tunnel).
+# Only paths that MUST be reachable from the internet are forwarded; everything else
+# (n8n editor, /evaluate, /review, /docs) stays private on your PC.
+:8080 {
+	# Candidate interview pages, HR recording links, Meta WhatsApp webhook, health check -> API
+	@api path /interview/* /recordings/* /whatsapp/webhook /health
+	handle @api {
+		reverse_proxy screener-api:8000
+	}
+
+	# n8n production + test webhooks (Vapi end-of-call report etc.)
+	@n8n path /webhook/* /webhook-test/*
+	handle @n8n {
+		reverse_proxy n8n:5678
+	}
+
+	handle {
+		respond "Not found" 404
+	}
+}
