@@ -80,6 +80,7 @@ class ScreeningService:
                     "role": req.role,
                     "transcript": req.transcript,
                     "call_duration_seconds": req.call_duration_seconds,
+                    "recording_url": req.recording_url,
                     "flags": [],
                     "score_attempts": 0,
                 },
@@ -138,5 +139,6 @@ class ScreeningService:
             flags=list(v.get("flags", [])),
             hr_review=v.get("hr_review"),
             incomplete_reason=v.get("incomplete_reason"),
+            recording_url=v.get("recording_url"),
             llm_model=self.llm_model,
         )

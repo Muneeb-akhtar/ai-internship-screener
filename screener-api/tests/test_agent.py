@@ -192,6 +192,23 @@ async def test_same_call_id_is_idempotent() -> None:
     assert len(scheduler.bookings) == 1  # not booked twice
 
 
+async def test_recording_link_reaches_hr() -> None:
+    llm = FakeLLM(scores=[make_scores(2, 2, 2, 2)])
+    url = "https://storage.vapi.ai/call-1.wav"
+    result = await make_service(llm).evaluate(request(recording_url=url))
+    assert result.recording_url == url
+    assert f"Recording: {url}" in result.messages["hr"]
+    assert url not in result.messages["candidate"]
+
+
+def test_scoring_prompt_warns_about_speech_recognition_errors() -> None:
+    from app.agent.prompts import score_messages
+
+    system = score_messages("Python Intern", "AI: hi\nUser: hello", "{}")[0].content
+    assert "AUTOMATIC SPEECH RECOGNITION" in system
+    assert "LOWER CONFIDENCE" in system
+
+
 async def test_unknown_thread() -> None:
     with pytest.raises(ThreadNotFound):
         await make_service(FakeLLM()).get("nope-123")

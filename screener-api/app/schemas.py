@@ -18,6 +18,8 @@ class EvaluateRequest(BaseModel):
     # From Vapi call metadata. When present, the API checks it belongs to candidate_id
     # (browser-supplied metadata is never trusted on its own).
     interview_token: str | None = Field(None, max_length=64)
+    # Vapi call recording (artifact.recordingUrl). Shown to HR so a human can listen.
+    recording_url: str | None = Field(None, max_length=2000, pattern=r"^https://")
 
 
 class ReviewRequest(BaseModel):
@@ -66,4 +68,5 @@ class EvaluationResult(BaseModel):
     flags: list[str] = Field(default_factory=list)
     hr_review: dict | None = None
     incomplete_reason: str | None = None
+    recording_url: str | None = None
     llm_model: str | None = None

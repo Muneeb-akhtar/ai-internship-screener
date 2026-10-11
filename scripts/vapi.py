@@ -138,7 +138,12 @@ def cmd_evaluate(args: argparse.Namespace) -> None:
         "call_id": call["id"],
         "call_duration_seconds": duration,
         "interview_token": meta.get("interview_token"),
+        # Raw recording URLs are private storage links, so HR gets the Vapi dashboard page for the
+        # call instead (login required -> candidate audio is never a public link in WhatsApp).
+        "recording_url": f"https://dashboard.vapi.ai/calls/{call['id']}",
     }
+    if args.rerun:  # new thread id -> evaluate again (e.g. after a prompt change)
+        body["call_id"] = f"{call['id']}-rerun-{datetime.now():%H%M%S}"
     print(f"Call {call['id']}: {call.get('endedReason')}, {duration or 0:.0f}s, "
           f"{len(transcript.split())} words. Evaluating (10-60 s)...")
     result = http("POST", f"{LOCAL_API}/evaluate", api_headers(env), body)
@@ -157,6 +162,7 @@ def main() -> None:
     sub.add_parser("calls", help="list recent Vapi calls").set_defaults(func=cmd_calls)
     p = sub.add_parser("evaluate", help="evaluate a finished Vapi call")
     p.add_argument("--call", required=True)
+    p.add_argument("--rerun", action="store_true", help="evaluate again as a new thread")
     p.set_defaults(func=cmd_evaluate)
     args = parser.parse_args()
     args.func(args)

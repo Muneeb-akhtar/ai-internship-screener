@@ -19,7 +19,7 @@
     "model": "nova-3",
     "language": "en-IN",
     "endpointing": 300,
-    "keyterm": ["Python", "tuple", "list", "dictionary", "pandas", "Flask", "Django", "JavaScript", "SQL", "internship", "Ayla"]
+    "keyterm": ["Python", "tuple", "list", "mutable", "immutable", "dictionary", "set", "hash", "duplicate", "loop", "pandas", "Flask", "Django", "FastAPI", "JavaScript", "SQL", "computer science", "AI agents", "machine learning", "work culture", "internship", "Ayla"]
   },
   "startSpeakingPlan": { "waitSeconds": 1.2 },
   "backgroundSpeechDenoisingPlan": { "smartDenoisingPlan": { "enabled": false } },

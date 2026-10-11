@@ -66,6 +66,8 @@ Vapi has to reach n8n over the internet. Once the tunnel or domain exists, set
 the n8n webhook checks. The fields n8n uses from the report:
 `message.call.id`, `message.call.assistantOverrides.metadata.{interview_token,candidate_id}`,
 `message.artifact.transcript`, `message.startedAt` / `message.endedAt`, `message.endedReason`.
+n8n sends `recording_url = https://dashboard.vapi.ai/calls/<call.id>` to `/evaluate`, so HR can listen
+(after logging in) before deciding. Speech-to-text makes mistakes, so the transcript alone isn't the truth.
 
 ## Changing the voice or model
 Edit `assistant.json`. For example, `voice.voiceId` takes any built-in Vapi voice name (try them in

@@ -78,6 +78,11 @@ def _fmt_when(iso: str, tz_name: str) -> str:
     return f"{dt.strftime('%A, %d %B %Y at %I:%M %p')} ({dt.tzname()})"
 
 
+def _recording_line(state: ScreeningState) -> str:
+    url = state.get("recording_url")
+    return f"\nRecording: {url}" if url else ""
+
+
 def _score_lines(scores: dict) -> str:
     return (
         f"Score: {scores['total']}/40 (confidence {scores['confidence']:.2f})\n"
@@ -187,7 +192,7 @@ class ScreeningNodes:
         hr_msg = (
             f"Borderline candidate - your decision needed\n"
             f"{state.get('candidate_name')} ({state['candidate_id']}) - {state['role']}\n"
-            f"{_score_lines(s)}\n\nAI summary: {s['summary']}\n\n"
+            f"{_score_lines(s)}\n\nAI summary: {s['summary']}{_recording_line(state)}\n\n"
             f"Reply APPROVE {thread_id} or REJECT {thread_id}"
         )
         return {"messages": {"hr": hr_msg}}
@@ -257,7 +262,8 @@ class ScreeningNodes:
         reviewed = " (approved by HR)" if state.get("hr_review") else ""
         hr_msg = (
             f"SHORTLISTED{reviewed}: {state.get('candidate_name')} ({state['candidate_id']}) - "
-            f"{state['role']}\n{_score_lines(s)}\n\nAI summary: {s['summary']}\n\n{hr_when}"
+            f"{state['role']}\n{_score_lines(s)}\n\nAI summary: {s['summary']}"
+            f"{_recording_line(state)}\n\n{hr_when}"
         )
         return {
             "final_decision": "shortlisted",
@@ -281,7 +287,7 @@ class ScreeningNodes:
         by = " by HR" if state.get("hr_review") else ""
         hr_msg = (
             f"REJECTED{by}: {state.get('candidate_name')} ({state['candidate_id']}) - {state['role']}\n"
-            f"{_score_lines(s)}\n\nAI summary: {s.get('summary', '')}"
+            f"{_score_lines(s)}\n\nAI summary: {s.get('summary', '')}{_recording_line(state)}"
         )
         return {
             "final_decision": "rejected",

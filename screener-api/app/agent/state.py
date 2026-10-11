@@ -110,6 +110,9 @@ class ScreeningState(TypedDict, total=False):
     role: str
     transcript: str
     call_duration_seconds: float | None
+    recording_url: (
+        str | None
+    )  # so a human can listen before deciding (speech-to-text makes mistakes)
 
     # ---- produced by the nodes ----
     answers: dict  # CandidateAnswers as a plain dict (JSON-friendly for the checkpointer)

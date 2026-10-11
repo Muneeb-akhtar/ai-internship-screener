@@ -114,6 +114,9 @@ Running record of the build so any new session (human or AI) can pick up where w
 - Note: 19/40 is one point under the human-review band. The candidate skipped one question and was
   auto-rejected. That's correct per the brief's rule, but worth an owner decision (see next steps).
 
+- Vapi moved to the owner's **hr@example.com** account: new keys, `vapi.py sync` recreated the assistant
+  (`2b225229-…`) from the repo files, and a new link page was verified. The old owner-account assistant is unused.
+
 ### Next steps
 1. Owner decision: should near-threshold rejects (e.g. 17–19) or any skipped question go to human review?
 2. Owner: rotate the Vapi private key (it was shared in chat).
