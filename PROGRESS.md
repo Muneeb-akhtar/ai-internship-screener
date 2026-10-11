@@ -9,7 +9,7 @@ Running record of the build so any new session (human or AI) can pick up where w
 | 1. Scaffold + local Docker | ✅ **Done.** All 3 containers healthy, endpoints + DBs verified (2026-10-09) |
 | 2. LangGraph agent | ✅ **Built + verified** with real Gemini and Postgres (2026-10-10). ⏳ Owner to test |
 | 3. Vapi interview page + assistant prompt | ✅ **Done.** Real browser interview → transcript → agent decision verified (2026-10-11) |
-| 4. Google Calendar tool | Not started |
+| 4. Google Calendar tool | ✅ **Done.** Real free/busy + events with Meet links in hr-account's calendar (2026-10-11) |
 | 5. n8n workflows + Meta WhatsApp Cloud API | Not started |
 | 6. AWS EC2 deployment | Not started (set an AWS Budget alert first) |
 | 7. CI/CD + README polish | Not started |
@@ -124,10 +124,32 @@ Running record of the build so any new session (human or AI) can pick up where w
   the audit log carry a recording link (the Vapi dashboard call page; raw recording URLs are private). Re-run of the
   same call: confidence 0.60 twice → human_review + `low_confidence` + recording link. Commit `1487711`.
 
+- Recording links: Vapi's dashboard has no per-call URL and raw recordings are private, so `/recordings/<call_id>`
+  serves signed HMAC links that expire after 14 days and redirect to a fresh presigned audio URL (Vapi private key
+  now in the container, server-side only). Verified live: audio/wav; a tampered link → 403. Commit `7f4c4ce`.
+
+### 2026-10-11: Phase 4, Google Calendar
+- OAuth (Desktop client) on **hr@example.com**, in the project `ai-internship-screener` (`<gcp-project-id>`),
+  with no billing. Calendar API enabled, consent screen External/Testing, owner added as a test user.
+  Scopes: `calendar.events` + `calendar.freebusy` only. Files: `secrets/google-oauth-client.json`, `secrets/google-token.json`
+  (git-ignored, mounted read-only at /run/secrets).
+- `GoogleCalendarScheduler`: free/busy → `find_free_slot` → `events.insert` with a hangoutsMeet `createRequest`
+  (`conferenceDataVersion=1`). The event id is derived from the thread id (idempotent; 409 → fetch the existing event).
+  Retries on 403/429/5xx, waits for a pending Meet link, and an asyncio lock prevents double booking. The API falls
+  back to `LocalScheduler` without a token.
+- Gotcha: `docker compose up -d` doesn't recreate an unchanged container, so a new secret file needs
+  `docker compose restart screener-api` (the scheduler is chosen at startup).
+- Verified live: the strong sample → shortlist → event Mon 12 Oct 10:00 PKT with a real Meet link; the same call_id again →
+  same event (no duplicate); a 2nd candidate → 10:30 (real busy time respected). 63 tests.
+- ⚠️ The consent screen is in **Testing** mode → Google expires the refresh token after 7 days. Publish the app
+  (Audience → Publish app) to avoid re-running `scripts/google_auth.py` every week.
+- Test events created: "Interview: Sara Khan (TEST)" 10:00 and "Interview: Ali Raza (TEST)" 10:30 on Mon 12 Oct.
+
 ### Next steps
 1. Owner decision: should near-threshold rejects (e.g. 17–19) or any skipped question go to human review?
 2. Owner: rotate the Vapi private key (it was shared in chat).
-3. Phase 4: Google Calendar (free/busy + event with a Meet link).
+3. Owner: publish the OAuth app (avoid the 7-day token expiry); delete the 2 TEST events if wanted.
+4. Phase 5: n8n workflows + Meta WhatsApp Cloud API + public tunnel.
 
 ## Decisions made
 - The repo root is `D:\AI Internship Screener` itself; the Compose project name is `ai-screener`.
