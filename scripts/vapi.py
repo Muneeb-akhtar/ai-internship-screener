@@ -48,7 +48,9 @@ def set_env_value(key: str, value: str) -> None:
 
 def http(method: str, url: str, headers: dict[str, str], body: dict | None = None) -> dict:
     data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(url, data=data, method=method, headers={"Content-Type": "application/json", **headers})
+    # A real User-Agent: Vapi's Cloudflare blocks the default "Python-urllib" one (error 1010)
+    base = {"Content-Type": "application/json", "User-Agent": "ai-internship-screener/0.1"}
+    req = urllib.request.Request(url, data=data, method=method, headers={**base, **headers})
     try:
         with urllib.request.urlopen(req, timeout=300) as resp:
             raw = resp.read()

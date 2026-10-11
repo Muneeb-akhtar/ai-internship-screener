@@ -35,7 +35,9 @@
     .live .dot { background: var(--ok); animation: pulse 1.4s infinite; }
     @keyframes pulse { 50% { opacity: .35; } }
     .timer { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 500; }
+    .meter-label { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
     .meter { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin-bottom: 16px; }
+    .hint { font-size: 14px; color: var(--warn); margin: -8px 0 12px; }
     .meter > div { height: 100%; width: 0; background: var(--accent); transition: width .1s; }
     #captions { border: 1px solid var(--line); border-radius: 10px; padding: 12px; height: 240px;
                 overflow-y: auto; font-size: 15px; }
@@ -73,7 +75,9 @@
   <section class="card" id="call" hidden>
     <div class="status" id="status-row"><span class="dot"></span><span id="status">Connecting…</span>
       <span class="timer" id="timer">0:00</span></div>
+    <div class="meter-label">Your microphone</div>
     <div class="meter" aria-hidden="true"><div id="level"></div></div>
+    <p class="hint" id="mic-hint" role="status" hidden>We can't hear you. Check that the right microphone is selected (🎙 icon in the address bar) and speak a little closer.</p>
     <div id="captions" aria-live="polite"></div>
     <button id="end" type="button">End interview</button>
     <p class="error" id="call-error" role="alert" hidden></p>
@@ -181,7 +185,16 @@
     });
     vapi.on("speech-start", () => setStatus("Assistant is speaking…", true));
     vapi.on("speech-end", () => setStatus("Your turn - please answer", true));
-    vapi.on("volume-level", (v) => { $("level").style.width = `${Math.min(100, v * 100)}%`; });
+    // Candidate's own mic level (0-1). Warn if it stays near silent for 12 s while it's their turn.
+    let lastHeard = Date.now(), assistantSpeaking = false;
+    vapi.on("speech-start", () => { assistantSpeaking = true; });
+    vapi.on("speech-end", () => { assistantSpeaking = false; lastHeard = Date.now(); });
+    vapi.on("local-volume-level", (v) => {
+      const level = typeof v === "number" ? v : (v?.level ?? 0);
+      $("level").style.width = `${Math.min(100, level * 300)}%`;  // speech is usually < 0.3
+      if (level > 0.02) lastHeard = Date.now();
+      $("mic-hint").hidden = assistantSpeaking || Date.now() - lastHeard < 12000;
+    });
     vapi.on("message", (m) => {
       if (m.type === "transcript" && m.transcriptType === "final") addCaption(m.role, m.transcript);
     });
@@ -190,9 +203,11 @@
       console.error("Vapi error", e);
       if (!startedAt) {
         showError("call-error", "The call couldn't start. Please reload the page and try again.");
-      } else {
-        finish("Your call was interrupted. If you didn't finish, we'll send you a new link on WhatsApp.");
+        return;
       }
+      // Vapi also emits "error" when the server ends the call normally (goodbye, silence
+      // timeout), right before "call-end". Only treat it as a drop if call-end never arrives.
+      setTimeout(() => finish("Your call was interrupted. If you didn't finish, we'll send you a new link on WhatsApp."), 4000);
     });
 
     try {

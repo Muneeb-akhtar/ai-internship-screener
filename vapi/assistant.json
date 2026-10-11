@@ -17,8 +17,12 @@
   "transcriber": {
     "provider": "deepgram",
     "model": "nova-3",
-    "language": "en"
+    "language": "en-IN",
+    "endpointing": 300,
+    "keyterm": ["Python", "tuple", "list", "dictionary", "pandas", "Flask", "Django", "JavaScript", "SQL", "internship", "Ayla"]
   },
+  "startSpeakingPlan": { "waitSeconds": 1.2 },
+  "backgroundSpeechDenoisingPlan": { "smartDenoisingPlan": { "enabled": true } },
   "maxDurationSeconds": 420,
   "endCallMessage": "Thank you for your time. Goodbye!",
   "artifactPlan": { "recordingEnabled": true },
