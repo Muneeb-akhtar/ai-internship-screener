@@ -582,10 +582,41 @@ def save(wf: WF, filename: str) -> None:
     (OUT / filename).write_text(json.dumps(wf.json(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def check_sheet() -> None:
+    """Prove n8n can read the sheet: a temporary webhook workflow reads the header row."""
+    creds = ensure_credentials()
+    wf = WF("TEMP sheet check")
+    hook = wf.add("hook", "n8n-nodes-base.webhook", 2,
+                  {"httpMethod": "GET", "path": "tmp-sheet-check", "responseMode": "lastNode", "options": {}},
+                  webhookId=str(uuid.uuid4()))
+    read = wf.add("read", "n8n-nodes-base.googleSheets", 4.7, sheet_params("read", options={}),
+                  creds=creds["sheets"], alwaysOutputData=True)
+    summary = wf.add("summary", "n8n-nodes-base.code", 2, {"jsCode": (
+        "const rows = $input.all().map(i => i.json).filter(r => Object.keys(r).length);\n"
+        "return [{ json: { rows: rows.length, columns: rows.length ? Object.keys(rows[0]) : 'empty sheet' } }];")})
+    wf.chain(hook, read, summary)
+    wid = api("POST", "/workflows", wf.json())["id"]
+    try:
+        api("POST", f"/workflows/{wid}/activate")
+        try:
+            with urllib.request.urlopen(f"{N8N}/webhook/tmp-sheet-check", timeout=60) as resp:
+                print("Sheet OK:", resp.read().decode())
+        except urllib.error.HTTPError:
+            ex = api("GET", f"/executions?workflowId={wid}&includeData=true&limit=1")["data"][0]
+            err = ex["data"]["resultData"].get("error") or {}
+            print("Sheet check FAILED:", err.get("message"))
+    finally:
+        api("POST", f"/workflows/{wid}/deactivate")
+        api("DELETE", f"/workflows/{wid}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("action", choices=["build", "push", "activate"])
+    parser.add_argument("action", choices=["build", "push", "activate", "check-sheet"])
     action = parser.parse_args().action
+    if action == "check-sheet":
+        check_sheet()
+        return
 
     creds = placeholder_credentials() if action == "build" else ensure_credentials()
     process = wf_process_result(creds)
