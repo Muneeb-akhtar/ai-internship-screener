@@ -29,6 +29,11 @@
              width: 100%; cursor: pointer; }
     button:disabled { opacity: .55; cursor: not-allowed; }
     #start { background: var(--accent); color: var(--accent-text); }
+    .secondary { background: var(--soft); color: var(--text); margin-bottom: 4px; }
+    .mic-test { margin-bottom: 12px; }
+    #mic-select { width: 100%; font: inherit; padding: 10px; border-radius: 10px; margin-bottom: 8px;
+                  background: var(--card); color: var(--text); border: 1px solid var(--line); }
+    .tip { font-size: 14px; color: var(--muted); margin: 0 0 16px; }
     #end { background: transparent; color: var(--warn); border: 1px solid var(--warn); margin-top: 12px; }
     .status { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; font-weight: 600; }
     .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
@@ -67,6 +72,13 @@
       will ask for your consent first. AI only helps shortlist candidates; <strong>people at {{ company }}
       make every hiring decision</strong>.
     </div>
+    <div class="mic-test">
+      <div class="meter-label">Microphone check: say "Hello, testing" - the bar should reach the middle</div>
+      <div class="meter" aria-hidden="true"><div id="test-level"></div></div>
+      <select id="mic-select" aria-label="Microphone" hidden></select>
+      <button id="test" type="button" class="secondary">Test my microphone</button>
+    </div>
+    <p class="tip">Tip: earphones with a mic work best. Laptop speakers can echo into the microphone.</p>
     <button id="start" type="button">Start interview</button>
     <p class="error" id="intro-error" role="alert" hidden></p>
   </section>
@@ -143,22 +155,90 @@
     ended = true;
     clearInterval(timerId);
     if (message) $("done-text").textContent = message;
+    micStream?.getTracks().forEach((t) => t.stop());  // release the microphone
     show("done");
   }
+
+  // ---------------------------------------------------------------- microphone
+  // We open the mic ourselves (instead of letting the SDK use defaults) so we control the
+  // browser's voice processing, then hand the track to Vapi via `audioSource`:
+  //  - echoCancellation ON:  the assistant's voice from laptop speakers isn't sent back
+  //  - noiseSuppression OFF: browser suppression was cutting quiet speech to silence
+  //  - autoGainControl ON:   boosts quiet voices / quiet laptop mics
+  let micStream = null, meterStop = null;
+
+  async function openMic(deviceId) {
+    micStream?.getTracks().forEach((t) => t.stop());
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        deviceId: deviceId ? { exact: deviceId } : undefined,
+        echoCancellation: true,
+        noiseSuppression: false,
+        autoGainControl: true,
+        channelCount: 1,
+      },
+    });
+    startTestMeter(micStream);
+    await listMics(micStream.getAudioTracks()[0].getSettings().deviceId);
+    return micStream;
+  }
+
+  // Live level meter for the pre-call test (Web Audio API, nothing is sent anywhere)
+  function startTestMeter(stream) {
+    meterStop?.();
+    const ctx = new AudioContext();
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 1024;
+    ctx.createMediaStreamSource(stream).connect(analyser);
+    const buf = new Float32Array(analyser.fftSize);
+    let raf = 0;
+    const loop = () => {
+      analyser.getFloatTimeDomainData(buf);
+      const rms = Math.sqrt(buf.reduce((s, v) => s + v * v, 0) / buf.length);
+      $("test-level").style.width = `${Math.min(100, rms * 400)}%`;
+      raf = requestAnimationFrame(loop);
+    };
+    loop();
+    meterStop = () => { cancelAnimationFrame(raf); ctx.close(); };
+  }
+
+  async function listMics(currentId) {
+    const mics = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput");
+    const select = $("mic-select");
+    select.replaceChildren(...mics.map((d, i) => {
+      const o = document.createElement("option");
+      o.value = d.deviceId;
+      o.textContent = d.label || `Microphone ${i + 1}`;
+      o.selected = d.deviceId === currentId;
+      return o;
+    }));
+    select.hidden = mics.length < 2;
+  }
+
+  $("test").addEventListener("click", async () => {
+    $("intro-error").hidden = true;
+    try {
+      await openMic($("mic-select").value || undefined);
+      $("test").textContent = "Microphone on - speak to test";
+    } catch {
+      showError("intro-error", "We couldn't access your microphone. Please allow microphone access in your browser settings and try again.");
+    }
+  });
+  $("mic-select").addEventListener("change", (e) => openMic(e.target.value).catch(() => {}));
 
   async function start() {
     $("start").disabled = true;
     $("intro-error").hidden = true;
 
-    // 1) Microphone permission first, with a clear message if denied
+    // 1) Microphone (reuse the tested one), with a clear message if denied
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((t) => t.stop());
+      if (!micStream) await openMic();
     } catch {
       showError("intro-error", "We couldn't access your microphone. Please allow microphone access in your browser settings and try again.");
       $("start").disabled = false;
       return;
     }
+    meterStop?.();
 
     // 2) Reserve an attempt on our server BEFORE spending Vapi minutes
     try {
@@ -176,7 +256,8 @@
     // 3) Start the Vapi browser call
     show("call");
     setStatus("Connecting…");
-    vapi = new Vapi(cfg.publicKey);
+    // 4th constructor argument = Daily call options; audioSource = our tuned mic track
+    vapi = new Vapi(cfg.publicKey, undefined, undefined, { audioSource: micStream.getAudioTracks()[0] });
 
     vapi.on("call-start", () => {
       setStatus("Interview in progress", true);
