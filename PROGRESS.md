@@ -145,6 +145,18 @@ Running record of the build so any new session (human or AI) can pick up where w
   (Audience → Publish app) to avoid re-running `scripts/google_auth.py` every week.
 - Test events created: "Interview: Sara Khan (TEST)" 10:00 and "Interview: Ali Raza (TEST)" 10:30 on Mon 12 Oct.
 
+### 2026-10-11: Phase 5 (in progress)
+- A. Dev tunnel: a Cloudflare quick tunnel (`--profile tunnel`) → `caddy-dev` exposes ONLY `/interview/*`, `/recordings/*`,
+  `/whatsapp/webhook`, `/health` and the n8n `/webhook/vapi-end-of-call`. `scripts/dev_tunnel.py` writes the URL into
+  `.env` (PUBLIC_BASE_URL, N8N_WEBHOOK_URL), recreates the API and n8n, and re-syncs the Vapi webhook. Verified from the internet.
+- B. `/whatsapp/webhook` in the API: GET verification, an HMAC check of X-Hub-Signature-256 on the raw body, HR-only
+  APPROVE/REJECT parsing, dedupe, and background forwarding to n8n (`hr-review`, `whatsapp-inbound`). 69 tests.
+- C. `scripts/n8n_workflows.py` builds and pushes 6 workflows via the n8n public API (exports in `n8n/workflows/`). WhatsApp is sent
+  with the HTTP Request node → Graph API (`$env` token). Templates used: `screening_invite(name, role, link)`,
+  `screening_update(name, text)`, `hr_alert(text)`. The Sheet tab is `Candidates`, with 2 extra columns `thread_id`, `flags`.
+- Waiting on the owner: n8n owner account + N8N_API_KEY, the Meta app (test number, verified recipient), Google Sheet + Sheets/Gmail
+  APIs enabled, then connecting the n8n Google credentials.
+
 ### Next steps
 1. Owner decision: should near-threshold rejects (e.g. 17–19) or any skipped question go to human review?
 2. Owner: rotate the Vapi private key (it was shared in chat).
