@@ -293,14 +293,18 @@ return out;
                    "options": {"appendAttribution": False}},
                   pos=(720, 460), creds=creds["gmail"], onError="continueRegularOutput", **RETRY)
     link = wf.add("New interview link", "n8n-nodes-base.httpRequest", 4.2,
-                  http("POST", "={{ $env.SCREENER_API_URL }}/interview-links",
-                       json_body="={{ JSON.stringify({ candidate_id: $json.candidate_id, candidate_name: $json.name, role: $json.role }) }}",
+                  # VOICE_PROVIDER=elevenlabs -> ask the API to start a WhatsApp call (returns the link too)
+                  http("POST", "={{ $env.SCREENER_API_URL + ($env.VOICE_PROVIDER === 'elevenlabs' && $json.to ? '/voice/whatsapp-call' : '/interview-links') }}",
+                       json_body="={{ JSON.stringify({ candidate_id: $json.candidate_id, candidate_name: $json.name, role: $json.role, phone: String($json.to || '') }) }}",
                        full=False), pos=(720, 640), **RETRY)
     reinv = wf.add("Re-invite message", "n8n-nodes-base.code", 2, code(r"""
 const src = $('Route').item.json;
-const note = `your screening call ended early, no problem. Here is a new link to try again: ${$json.url}`;
+const calling = $json.call_started === true;
+const note = calling
+  ? `your screening call ended early, no problem. Our AI interviewer will call you again on WhatsApp shortly, or use this link to do it in your browser: ${$json.url}`
+  : `your screening call ended early, no problem. Here is a new link to try again: ${$json.url}`;
 return { json: {
-  wa: USE_WA && src.to ? template(src.to, 'screening_update', [firstName(src.name), note]) : null,
+  wa: !calling && USE_WA && src.to ? template(src.to, 'screening_update', [firstName(src.name), note]) : null,
   email: USE_EMAIL && src.email ? { to: src.email, subject: `New link for your ${src.role} screening interview`,
     message: `Hi ${firstName(src.name)},\n\n${note.charAt(0).toUpperCase() + note.slice(1)}\n\nThe Hiring Team` } : null,
   fields: { candidate_id: src.candidate_id, status: 'Re-invited', interview_link: $json.url, updated_at: NOW },
@@ -334,22 +338,30 @@ def wf_invite(creds: dict) -> WF:
     rows = wf.add("Get new candidates", "n8n-nodes-base.googleSheets", 4.7, sheet_read("status", "New"),
                   pos=(240, 300), creds=creds["sheets"], **RETRY)
     link = wf.add("Create interview link", "n8n-nodes-base.httpRequest", 4.2,
-                  http("POST", "={{ $env.SCREENER_API_URL }}/interview-links",
-                       json_body="={{ JSON.stringify({ candidate_id: String($json.candidate_id), candidate_name: $json.name, role: $json.role }) }}",
+                  # VOICE_PROVIDER=elevenlabs -> ask the API to start a WhatsApp call (returns the link too)
+                  http("POST", "={{ $env.SCREENER_API_URL + ($env.VOICE_PROVIDER === 'elevenlabs' && $json.phone ? '/voice/whatsapp-call' : '/interview-links') }}",
+                       json_body="={{ JSON.stringify({ candidate_id: String($json.candidate_id), candidate_name: $json.name, role: $json.role, phone: String($json.phone || '') }) }}",
                        full=False), pos=(480, 300), **RETRY)
     build = wf.add("Build invite", "n8n-nodes-base.code", 2, code(r"""
 const row = $('Get new candidates').item.json;
 const to = waNumber(row.phone), first = firstName(row.name);
+const calling = $json.call_started === true;   // ElevenLabs is calling them on WhatsApp
+const how = calling
+  ? `Our AI interviewer will call you on WhatsApp shortly. First you'll get a WhatsApp message asking ` +
+    `permission to call - tap "Allow", and the 5-minute screening interview starts.\n\n` +
+    `Prefer your computer, or the call didn't come? Do the same interview in your browser:\n${$json.url}\n\n`
+  : `Please complete your 5-minute AI screening interview here:\n${$json.url}\n\n` +
+    `It runs in your browser (Chrome/Edge) - find a quiet place and allow microphone access. `;
 return { json: {
   candidate_id: String(row.candidate_id), url: $json.url,
-  wa: USE_WA && to ? template(to, 'screening_invite', [first, row.role, $json.url]) : null,
+  // With a WhatsApp call, the permission request IS the WhatsApp touchpoint (sent by ElevenLabs)
+  wa: !calling && USE_WA && to ? template(to, 'screening_invite', [first, row.role, $json.url]) : null,
   email: USE_EMAIL && row.email ? { to: row.email, subject: `Your screening interview for the ${row.role} internship`,
-    message: `Hi ${first},\n\nThank you for applying for the ${row.role} internship.\n\n` +
-      `Please complete your 5-minute AI screening interview here:\n${$json.url}\n\n` +
-      `It runs in your browser (Chrome/Edge) - find a quiet place and allow microphone access. ` +
+    message: `Hi ${first},\n\nThank you for applying for the ${row.role} internship.\n\n${how}` +
       `The link is valid for 3 days.\n\nThe call is recorded so our HR team can review it; people, not AI, ` +
       `make every hiring decision.\n\nBest regards,\nThe Hiring Team` } : null,
-  fields: { candidate_id: String(row.candidate_id), interview_link: $json.url, status: 'Invited', updated_at: NOW },
+  fields: { candidate_id: String(row.candidate_id), interview_link: $json.url, status: 'Invited', updated_at: NOW,
+    flags: calling ? 'whatsapp_call_requested' : ($json.call_error ? `whatsapp_call_failed: ${clean($json.call_error, 150)}` : '') },
 } };
 """, each=True), pos=(720, 300))
     has_wa = only_if(wf, "WhatsApp invite?", "$json.wa", (960, 160))
@@ -369,10 +381,22 @@ return { json: {
 
 def wf_vapi(creds: dict, process_id: str) -> WF:
     wf = WF("2 - Vapi end-of-call -> evaluate")
-    hook = webhook(wf, "Vapi end-of-call webhook", "vapi-end-of-call", (0, 300))
+    hook = webhook(wf, "Vapi end-of-call webhook", "vapi-end-of-call", (0, 220))
+    # ElevenLabs WhatsApp calls: our API verifies ElevenLabs' signature, normalises the
+    # transcript and forwards it here (internal, X-API-Key) -> same evaluation path.
+    hook2 = webhook(wf, "Voice call ended (from API)", "voice-call-ended", (0, 400))
     parse = wf.add("Verify & parse", "n8n-nodes-base.code", 2, code(r"""
 const h = $json.headers || {};
-const msg = ($json.body || {}).message || {};
+const b = $json.body || {};
+if (b.provider === 'elevenlabs') {
+  return { json: {
+    authorized: !!$env.SCREENER_API_KEY && h['x-api-key'] === $env.SCREENER_API_KEY,
+    relevant: !!b.candidate_id, candidate_id: b.candidate_id, interview_token: b.interview_token,
+    call_id: b.call_id, duration: b.duration, transcript: b.transcript || '',
+    call_time: b.call_time || '', ended_reason: b.ended_reason,
+  } };
+}
+const msg = b.message || {};
 const call = msg.call || {};
 const meta = (call.assistantOverrides || {}).metadata || {};
 const started = msg.startedAt || call.startedAt, ended = msg.endedAt || call.endedAt;
@@ -426,6 +450,7 @@ return { json: { row: b.row, prev_status: b.prev_status, result: ok ? $json.body
     sub = wf.add("Process result", "n8n-nodes-base.executeWorkflow", 1.2,
                  {"source": "database", "workflowId": rl(process_id), "options": {}}, pos=(2160, 300))
     wf.chain(hook, parse, auth)
+    wf.link(hook2, parse)
     wf.link(auth, ok, 0)
     wf.link(auth, deny, 1)
     wf.chain(ok, rel, find, build)

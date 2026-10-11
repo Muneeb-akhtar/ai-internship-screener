@@ -41,20 +41,34 @@ def main() -> None:
     print(f"Tunnel: {url}")
     vapi.set_env_value("PUBLIC_BASE_URL", url)
     vapi.set_env_value("N8N_WEBHOOK_URL", url + "/")
+    env = vapi.read_env()
 
-    print("Recreating screener-api + n8n with the new URL...")
+    # ElevenLabs first: replacing its webhook issues a NEW secret, which the API must load
+    if env.get("ELEVENLABS_API_KEY"):
+        import elevenlabs
+
+        print("Pointing the ElevenLabs post-call webhook at the tunnel...")
+        elevenlabs.cmd_webhook(None)
+
+    print("Recreating screener-api + n8n with the new settings...")
     subprocess.run([*COMPOSE, "up", "-d", "screener-api", "n8n"], cwd=ROOT, check=True)
 
-    if vapi.read_env().get("VAPI_PRIVATE_KEY"):
+    if env.get("VAPI_PRIVATE_KEY"):
         print("Re-syncing the Vapi assistant webhook...")
         vapi.cmd_sync(None)
+    if env.get("META_APP_SECRET") and env.get("META_WA_ACCESS_TOKEN"):
+        import whatsapp
+
+        print("Re-registering the Meta WhatsApp webhook...")
+        whatsapp.cmd_webhook(None)
 
     print(
         "\nPublic URLs:\n"
-        f"  Interview pages : {url}/interview/<token>\n"
-        f"  Vapi webhook    : {url}/webhook/vapi-end-of-call\n"
-        f"  Meta webhook    : {url}/whatsapp/webhook   (set this in the Meta app)\n"
-        f"  Health          : {url}/health"
+        f"  Interview pages    : {url}/interview/<token>\n"
+        f"  Vapi webhook       : {url}/webhook/vapi-end-of-call\n"
+        f"  ElevenLabs webhook : {url}/elevenlabs/post-call\n"
+        f"  Meta webhook       : {url}/whatsapp/webhook\n"
+        f"  Health             : {url}/health"
     )
 
 

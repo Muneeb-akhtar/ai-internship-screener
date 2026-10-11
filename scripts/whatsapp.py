@@ -11,6 +11,7 @@ Our three templates are generic on purpose (the API drafts the actual wording):
   screening_invite(name, role, link)   first contact with a candidate
   screening_update(name, text)         every later candidate message (result, reminder, re-invite)
   hr_alert(text)                       every message to HR
+  interview_call_permission            asks permission before the ElevenLabs WhatsApp call (no params)
 """
 
 import argparse
@@ -47,6 +48,23 @@ TEMPLATES = [
             "text": "Hi {{1}}, here is an update on your internship application: {{2}} Thank you, The Hiring Team.",
             "example": {"body_text": [["Sara", "You have been shortlisted. Your interview is on Monday 12 Oct at 10:00 AM PKT."]]},
         }],
+    },
+    {
+        # Used by ElevenLabs before an outbound WhatsApp call: the candidate taps "Allow"
+        # (Meta's call_permission_request component), then the AI interviewer calls them.
+        "name": "interview_call_permission",
+        "category": "UTILITY",
+        "language": "en",
+        "components": [
+            {
+                # No {{placeholders}}: ElevenLabs' outbound-call API sends this template without
+                # parameters, so any variable here would make Meta reject the permission request.
+                "type": "body",
+                "text": ("Thank you for applying for our internship. Our AI interviewer would like to call you "
+                         "on WhatsApp for a 5-minute screening interview. Please allow the call when you're ready."),
+            },
+            {"type": "call_permission_request"},
+        ],
     },
     {
         "name": "hr_alert",

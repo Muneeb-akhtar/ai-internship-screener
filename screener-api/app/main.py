@@ -41,6 +41,7 @@ from app.recordings import router as recordings_router
 from app.schemas import EvaluateRequest, EvaluationResult, ReviewRequest
 from app.security import require_api_key
 from app.tools.calendar import build_scheduler
+from app.voice.elevenlabs import router as elevenlabs_router
 from app.whatsapp import router as whatsapp_router
 
 log = structlog.get_logger()
@@ -91,6 +92,7 @@ app.include_router(interview_router)
 app.include_router(recordings_router)
 app.include_router(whatsapp_router)
 app.include_router(hr_review_router)
+app.include_router(elevenlabs_router)
 
 
 @app.middleware("http")

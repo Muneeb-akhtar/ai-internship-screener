@@ -2,7 +2,7 @@
   "name": "6 - Reminders and expiry",
   "nodes": [
     {
-      "id": "d908cf64-024c-4768-ab9d-cfb337af4234",
+      "id": "d00aa4a2-6109-445b-bb82-f15f0e0fcc2c",
       "name": "Every hour",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -22,7 +22,7 @@
       }
     },
     {
-      "id": "3468ccfb-0f5b-4676-86b3-852b9053a0b2",
+      "id": "99220537-cc1d-43af-9504-14388b20f62d",
       "name": "Get invited candidates",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -63,7 +63,7 @@
       }
     },
     {
-      "id": "5d196093-9213-438b-8c2e-6900b518eade",
+      "id": "2ba89bb7-5603-4cfa-a9bf-159dfa5777d0",
       "name": "Link status",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -98,7 +98,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "ea863530-d423-41bd-9e5b-83cd28b4aaa9",
+      "id": "9b9bd215-763a-42d3-b42b-63298b43bbaf",
       "name": "Decide",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -111,7 +111,7 @@
       }
     },
     {
-      "id": "b4ba6ce5-45a5-46bd-b351-8030fab266cb",
+      "id": "24e59721-c8cc-4095-93d8-2fe6bf85c6ee",
       "name": "WhatsApp reminder?",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
@@ -129,7 +129,7 @@
           },
           "conditions": [
             {
-              "id": "bb1721c5-7f5e-4131-98e1-a4cfc8372616",
+              "id": "4c1fcf6b-e32e-4329-816d-73b9fc642b8b",
               "leftValue": "={{ !!($json.wa) }}",
               "rightValue": "",
               "operator": {
@@ -145,7 +145,7 @@
       }
     },
     {
-      "id": "f8d4fcb5-5b43-4c1d-99ec-b6bcaf331a1f",
+      "id": "ca5b7ec1-ed30-488f-8496-4acb2b6050e2",
       "name": "Send WhatsApp reminder",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -183,7 +183,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "fc1f277d-6099-4abd-8314-659e017e3e8f",
+      "id": "67cca3e0-daf2-489b-9e9b-08c61a8cc14c",
       "name": "Email reminder?",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
@@ -201,7 +201,7 @@
           },
           "conditions": [
             {
-              "id": "19bcb7c3-4dd4-4b32-8a96-b46e7821d156",
+              "id": "0f756fd3-8a15-4ffa-ad9c-08c8be722478",
               "leftValue": "={{ !!($json.email) }}",
               "rightValue": "",
               "operator": {
@@ -217,7 +217,7 @@
       }
     },
     {
-      "id": "8fbe930f-0512-44a2-9d55-affc3619ceda",
+      "id": "4e4b1395-80d3-4440-b666-e4ac3e2df470",
       "name": "Send email reminder",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
@@ -248,7 +248,7 @@
       }
     },
     {
-      "id": "856ae6c1-2b56-4793-822b-86db29af77be",
+      "id": "39a0940e-84b2-42d7-92bd-03296ad5a4ca",
       "name": "Sheet fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -261,7 +261,7 @@
       }
     },
     {
-      "id": "1c48007f-0e6f-4bc7-ad02-8500797c7ac8",
+      "id": "d8fa898f-1ed7-4094-b95a-d56005a47cc2",
       "name": "Update sheet",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,

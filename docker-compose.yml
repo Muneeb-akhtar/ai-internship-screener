@@ -93,6 +93,7 @@ services:
       WA_TEMPLATE_LANG: ${WA_TEMPLATE_LANG:-en}
       HR_WHATSAPP_NUMBER: ${HR_WHATSAPP_NUMBER:-}
       HR_EMAIL: ${HR_EMAIL:-}
+      VOICE_PROVIDER: ${VOICE_PROVIDER:-vapi}
       # Delivery channels for candidate/HR messages (comma-separated): email, whatsapp
       NOTIFY_CHANNELS: ${NOTIFY_CHANNELS:-email,whatsapp}
     volumes:
@@ -144,6 +145,14 @@ services:
       INTERNSHIP_SCHEDULE: ${INTERNSHIP_SCHEDULE:-full-time, Monday to Friday}
       INTERNSHIP_START: ${INTERNSHIP_START:-next month}
       INTERNSHIP_FAQ: ${INTERNSHIP_FAQ:-}
+      # Voice provider: vapi (browser link) | elevenlabs (AI calls the candidate on WhatsApp)
+      VOICE_PROVIDER: ${VOICE_PROVIDER:-vapi}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      ELEVENLABS_AGENT_ID: ${ELEVENLABS_AGENT_ID:-}
+      ELEVENLABS_WEBHOOK_SECRET: ${ELEVENLABS_WEBHOOK_SECRET:-}
+      META_WA_PHONE_NUMBER_ID: ${META_WA_PHONE_NUMBER_ID:-}
+      WA_CALL_PERMISSION_TEMPLATE: ${WA_CALL_PERMISSION_TEMPLATE:-interview_call_permission}
+      WA_TEMPLATE_LANG: ${WA_TEMPLATE_LANG:-en}
       # WhatsApp webhook (Phase 5): signature check + who may APPROVE/REJECT
       META_APP_SECRET: ${META_APP_SECRET:-}
       META_WEBHOOK_VERIFY_TOKEN: ${META_WEBHOOK_VERIFY_TOKEN:-}

@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 
 from app.config import Settings, get_settings
 from app.interview.links import MAX_CALL_STARTS, InterviewLink, LinkStore
-from app.interview.questions import questions_for_role
+from app.interview.questions import interview_variables
 from app.security import require_api_key
 
 log = structlog.get_logger()
@@ -157,7 +157,6 @@ async def interview_page(
         )
 
     await links.mark_opened(token)
-    questions = questions_for_role(link.role)
     # Everything here ends up in the browser - never put secrets in it.
     config = {
         "publicKey": settings.vapi_public_key,
@@ -165,17 +164,7 @@ async def interview_page(
         "eventsUrl": f"/interview/{token}/events",
         "maxMinutes": 6,
         "overrides": {
-            "variableValues": {
-                "candidate_name": link.candidate_name.split()[0],
-                "role": link.role,
-                "company_name": settings.company_name,
-                "technical_question": questions.technical,
-                "problem_question": questions.problem,
-                "internship_duration": settings.internship_duration,
-                "internship_schedule": settings.internship_schedule,
-                "internship_start": settings.internship_start,
-                "internship_faq": settings.internship_faq,
-            },
+            "variableValues": interview_variables(link.candidate_name, link.role, settings),
             # Echoed back in Vapi's end-of-call report; n8n passes interview_token to
             # /evaluate, which verifies it against the DB (metadata itself isn't trusted).
             "metadata": {"interview_token": token, "candidate_id": link.candidate_id},

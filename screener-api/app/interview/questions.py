@@ -44,6 +44,23 @@ GENERIC = RoleQuestions(
 )
 
 
+def interview_variables(candidate_name: str, role: str, settings) -> dict[str, str]:  # noqa: ANN001
+    """Values for the {{placeholders}} in vapi/assistant-prompt.md - identical for the
+    browser call (Vapi variableValues) and the WhatsApp call (ElevenLabs dynamic_variables)."""
+    questions = questions_for_role(role)
+    return {
+        "candidate_name": candidate_name.split()[0] if candidate_name.strip() else "there",
+        "role": role,
+        "company_name": settings.company_name,
+        "technical_question": questions.technical,
+        "problem_question": questions.problem,
+        "internship_duration": settings.internship_duration,
+        "internship_schedule": settings.internship_schedule,
+        "internship_start": settings.internship_start,
+        "internship_faq": settings.internship_faq,
+    }
+
+
 def questions_for_role(role: str) -> RoleQuestions:
     """First keyword found in the role name wins, e.g. 'Python Developer Intern' -> python."""
     role_l = role.lower()

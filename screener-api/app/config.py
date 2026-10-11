@@ -64,6 +64,17 @@ class Settings(BaseSettings):
     vapi_private_key: SecretStr | None = None
     interview_link_ttl_hours: int = 72
 
+    # ---- Voice provider -------------------------------------------------------------
+    # "vapi": candidate opens a link and talks in the browser.
+    # "elevenlabs": the AI interviewer calls the candidate on WhatsApp (after they allow it).
+    voice_provider: Literal["vapi", "elevenlabs"] = "vapi"
+    elevenlabs_api_key: SecretStr | None = None
+    elevenlabs_agent_id: str | None = None
+    elevenlabs_webhook_secret: SecretStr | None = None  # verifies ElevenLabs-Signature (post-call)
+    meta_wa_phone_number_id: str | None = None  # the WhatsApp number ElevenLabs calls from
+    wa_call_permission_template: str = "interview_call_permission"
+    wa_template_lang: str = "en"
+
     # ---- WhatsApp (Meta Cloud API) webhook + n8n (Phase 5) ----------------------------
     meta_app_secret: SecretStr | None = None  # verifies X-Hub-Signature-256 on incoming webhooks
     meta_webhook_verify_token: SecretStr | None = None  # Meta's GET verification handshake

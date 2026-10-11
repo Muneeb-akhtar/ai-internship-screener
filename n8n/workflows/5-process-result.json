@@ -2,7 +2,7 @@
   "name": "5 - Process evaluation result",
   "nodes": [
     {
-      "id": "bd3690dc-f9c8-4d54-9464-cbd5335932f9",
+      "id": "78ea360c-5dd9-4338-bfab-03ad03cbb9a5",
       "name": "When called by another workflow",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -15,7 +15,7 @@
       }
     },
     {
-      "id": "78a2142d-82f6-4ccf-8880-6320533528c7",
+      "id": "97b96d81-56e1-47f5-bd52-e42befa62006",
       "name": "Plan notifications",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -28,7 +28,7 @@
       }
     },
     {
-      "id": "83a742a5-5f60-4414-a11c-a28329397dd5",
+      "id": "eba5f08f-916e-44d3-b7e9-3841a78fed0d",
       "name": "Route",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
@@ -49,7 +49,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "b4d3c2ee-c8fb-4da7-8ad6-5f36ad0a3496",
+                    "id": "a1361bfc-0678-40a7-977c-bd41266c7dce",
                     "leftValue": "={{ $json.channel }}",
                     "rightValue": "sheet",
                     "operator": {
@@ -73,7 +73,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "4cf28eb6-7671-4447-b1ef-ae3e4d9b16d0",
+                    "id": "5d3b5d08-b865-4f90-b592-8caf1740cb47",
                     "leftValue": "={{ $json.channel }}",
                     "rightValue": "whatsapp",
                     "operator": {
@@ -97,7 +97,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "be8e26f8-2b1d-4385-86e7-e4c23cabb92b",
+                    "id": "a8daffe3-ca20-4b8b-8a38-288e5ba4b24a",
                     "leftValue": "={{ $json.channel }}",
                     "rightValue": "email",
                     "operator": {
@@ -121,7 +121,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "1acc1d71-c33c-4f92-bf2f-625dc662804e",
+                    "id": "a1b3a1f0-a496-41af-8678-0e6beb48a311",
                     "leftValue": "={{ $json.channel }}",
                     "rightValue": "reinvite",
                     "operator": {
@@ -141,7 +141,7 @@
       }
     },
     {
-      "id": "e3341291-7479-47bf-993c-8980c1900396",
+      "id": "b2bd884b-3960-4c3f-859e-3aad9b9ca898",
       "name": "Sheet fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -154,7 +154,7 @@
       }
     },
     {
-      "id": "fa5d4608-1af4-4ee2-906d-b7e4c751ee75",
+      "id": "d40699b7-4bfe-49f4-b192-d7b92c25ddcb",
       "name": "Update sheet",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -340,7 +340,7 @@
       }
     },
     {
-      "id": "f5314a50-7480-46e9-b582-e5fab02e21fb",
+      "id": "4ffa9392-08b1-4081-8eeb-8d6ef4a2f2bf",
       "name": "Send WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -378,7 +378,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "01152685-8d07-45b9-ad6f-8c868cab7b1f",
+      "id": "c2f5eddc-e4e9-4928-83ee-c38dc529d9a4",
       "name": "Send email",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
@@ -409,7 +409,7 @@
       }
     },
     {
-      "id": "10646e78-7c69-496b-a17a-b46b4d1ed356",
+      "id": "4ae44251-3c15-452c-939a-49d92cd0b863",
       "name": "New interview link",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -419,7 +419,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SCREENER_API_URL }}/interview-links",
+        "url": "={{ $env.SCREENER_API_URL + ($env.VOICE_PROVIDER === 'elevenlabs' && $json.to ? '/voice/whatsapp-call' : '/interview-links') }}",
         "options": {
           "timeout": 30000
         },
@@ -434,14 +434,14 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ candidate_id: $json.candidate_id, candidate_name: $json.name, role: $json.role }) }}"
+        "jsonBody": "={{ JSON.stringify({ candidate_id: $json.candidate_id, candidate_name: $json.name, role: $json.role, phone: String($json.to || '') }) }}"
       },
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 3000
     },
     {
-      "id": "46e5e307-4931-48f6-b0ae-9cd80158d628",
+      "id": "1159f819-6625-4aac-ba84-ba3020a89d0a",
       "name": "Re-invite message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -450,12 +450,12 @@
         640
       ],
       "parameters": {
-        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n// Delivery channels (NOTIFY_CHANNELS=email,whatsapp). WhatsApp messages are still attempted\n// when enabled; email makes sure people are reached even if WhatsApp is blocked/unavailable.\nconst CHANNELS = String($env.NOTIFY_CHANNELS || 'email,whatsapp').split(',').map(s => s.trim());\nconst USE_WA = CHANNELS.includes('whatsapp'), USE_EMAIL = CHANNELS.includes('email');\n\nconst src = $('Route').item.json;\nconst note = `your screening call ended early, no problem. Here is a new link to try again: ${$json.url}`;\nreturn { json: {\n  wa: USE_WA && src.to ? template(src.to, 'screening_update', [firstName(src.name), note]) : null,\n  email: USE_EMAIL && src.email ? { to: src.email, subject: `New link for your ${src.role} screening interview`,\n    message: `Hi ${firstName(src.name)},\\n\\n${note.charAt(0).toUpperCase() + note.slice(1)}\\n\\nThe Hiring Team` } : null,\n  fields: { candidate_id: src.candidate_id, status: 'Re-invited', interview_link: $json.url, updated_at: NOW },\n} };",
+        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n// Delivery channels (NOTIFY_CHANNELS=email,whatsapp). WhatsApp messages are still attempted\n// when enabled; email makes sure people are reached even if WhatsApp is blocked/unavailable.\nconst CHANNELS = String($env.NOTIFY_CHANNELS || 'email,whatsapp').split(',').map(s => s.trim());\nconst USE_WA = CHANNELS.includes('whatsapp'), USE_EMAIL = CHANNELS.includes('email');\n\nconst src = $('Route').item.json;\nconst calling = $json.call_started === true;\nconst note = calling\n  ? `your screening call ended early, no problem. Our AI interviewer will call you again on WhatsApp shortly, or use this link to do it in your browser: ${$json.url}`\n  : `your screening call ended early, no problem. Here is a new link to try again: ${$json.url}`;\nreturn { json: {\n  wa: !calling && USE_WA && src.to ? template(src.to, 'screening_update', [firstName(src.name), note]) : null,\n  email: USE_EMAIL && src.email ? { to: src.email, subject: `New link for your ${src.role} screening interview`,\n    message: `Hi ${firstName(src.name)},\\n\\n${note.charAt(0).toUpperCase() + note.slice(1)}\\n\\nThe Hiring Team` } : null,\n  fields: { candidate_id: src.candidate_id, status: 'Re-invited', interview_link: $json.url, updated_at: NOW },\n} };",
         "mode": "runOnceForEachItem"
       }
     },
     {
-      "id": "fd26c3e6-4bd6-48f6-a8c1-51a08bb206ad",
+      "id": "70283c53-22eb-4d75-8425-d661b05423f4",
       "name": "WhatsApp re-invite?",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
@@ -473,7 +473,7 @@
           },
           "conditions": [
             {
-              "id": "bdf98ba8-c7a5-47e8-ae85-bfbfabc3d2aa",
+              "id": "8150bc13-4b73-4ed8-95f8-bc7ac42e8287",
               "leftValue": "={{ !!($json.wa) }}",
               "rightValue": "",
               "operator": {
@@ -489,7 +489,7 @@
       }
     },
     {
-      "id": "03f541f4-06aa-4b5a-953e-0573a65d7681",
+      "id": "6a1ccfd6-8241-49f4-a443-76ecbaf437da",
       "name": "Send re-invite",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -527,7 +527,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "f55c8232-c8d1-48b1-a8b3-b188b788c63b",
+      "id": "32b46423-22af-4b38-9340-41408edbb4a1",
       "name": "Email re-invite?",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
@@ -545,7 +545,7 @@
           },
           "conditions": [
             {
-              "id": "81cf77c9-5935-4da3-9a64-6d9a4e21d9e3",
+              "id": "b8832775-6d26-41be-8bbe-c352cc6664df",
               "leftValue": "={{ !!($json.email) }}",
               "rightValue": "",
               "operator": {
@@ -561,7 +561,7 @@
       }
     },
     {
-      "id": "79e30d0e-74e9-4167-9e48-db8718a8756d",
+      "id": "a3338b33-d596-415f-94e6-dd1e06528d82",
       "name": "Email re-invite",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
@@ -592,7 +592,7 @@
       }
     },
     {
-      "id": "858d9e69-d7a5-4cd9-a88c-9d98c94c419c",
+      "id": "6e81f957-2bc2-40d6-a341-fa9e88ebbfff",
       "name": "Re-invite sheet fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -605,7 +605,7 @@
       }
     },
     {
-      "id": "ecb1ae74-99ea-4304-9cef-64cadd0822d8",
+      "id": "974d551f-0192-45cf-9223-faab8af833ee",
       "name": "Update sheet (re-invited)",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
