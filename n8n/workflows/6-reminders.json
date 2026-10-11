@@ -2,7 +2,7 @@
   "name": "6 - Reminders and expiry",
   "nodes": [
     {
-      "id": "1039e8a0-956c-4587-afda-f3290f0b179a",
+      "id": "a38fe1d9-e7a8-40ab-9700-663a5181a3e4",
       "name": "Every hour",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -22,7 +22,7 @@
       }
     },
     {
-      "id": "b6d6e883-f5c3-446a-98a3-992a8b01b007",
+      "id": "cdd72f91-98e0-4dbd-9dc7-1ffd3989e454",
       "name": "Get invited candidates",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -63,7 +63,7 @@
       }
     },
     {
-      "id": "8d5c359e-2e95-4643-8bd8-3be453e74e4a",
+      "id": "6c8984cf-c32d-46b0-81be-77eed710eb36",
       "name": "Link status",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -98,7 +98,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "80e76e1c-30e4-465a-b6f6-b5863539a179",
+      "id": "a50e8fa1-0141-461e-83f3-6f91732a22b1",
       "name": "Decide",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -111,7 +111,7 @@
       }
     },
     {
-      "id": "a1c44d2a-ada8-45e8-a7ce-e1e676b34d24",
+      "id": "b838c93f-396f-44ba-90c5-87b0f1537938",
       "name": "Send reminder?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -129,7 +129,7 @@
           },
           "conditions": [
             {
-              "id": "de953d2a-ca99-40b7-966f-e3100911996e",
+              "id": "fde4d0bb-99ec-495c-ad22-1e00490903a6",
               "leftValue": "={{ !!$json.wa }}",
               "rightValue": "",
               "operator": {
@@ -145,7 +145,7 @@
       }
     },
     {
-      "id": "343a246e-7638-4b24-9e14-ca875acc3ad5",
+      "id": "766dc721-0ebb-4597-b212-9bc3ad814d5e",
       "name": "Send reminder",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -155,7 +155,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "=https://graph.facebook.com/{{ $env.META_GRAPH_VERSION || 'v24.0' }}/{{ $env.META_WA_PHONE_NUMBER_ID }}/messages",
+        "url": "=https://graph.facebook.com/{{ $env.META_GRAPH_VERSION || 'v25.0' }}/{{ $env.META_WA_PHONE_NUMBER_ID }}/messages",
         "options": {
           "timeout": 30000,
           "response": {
@@ -183,7 +183,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "09a82cef-b471-4db1-8bb9-9c8a0e8d444a",
+      "id": "3e4c1a1e-d438-421b-8e9f-eef3c6d1a14a",
       "name": "Reminded fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -196,7 +196,7 @@
       }
     },
     {
-      "id": "de5d2554-123d-44a2-94b8-f711191667ba",
+      "id": "4df9dc28-5a64-414e-a475-4c03a33d15ce",
       "name": "Expired fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -209,7 +209,7 @@
       }
     },
     {
-      "id": "2c2cf5fe-4a0d-480e-b616-58ba71b34eac",
+      "id": "1cd8756b-9a1b-4593-b617-57bb9b5bd6bb",
       "name": "Update sheet",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,

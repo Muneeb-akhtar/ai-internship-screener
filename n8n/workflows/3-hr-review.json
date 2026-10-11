@@ -2,7 +2,7 @@
   "name": "3 - HR review reply -> resume agent",
   "nodes": [
     {
-      "id": "50036144-98e0-4e37-a5d9-368f6056b240",
+      "id": "38ffad6b-27a5-4566-ace4-55b37450c847",
       "name": "HR review (from API)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -19,7 +19,7 @@
       "webhookId": "0e1bd51a-20e6-5c44-b949-c4037b24859e"
     },
     {
-      "id": "8c7bf3e5-e0ac-452c-b922-5bf905a2297b",
+      "id": "48d9fffb-1105-4e92-a63c-f1b35cb4b9e1",
       "name": "Internal call?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -37,7 +37,7 @@
           },
           "conditions": [
             {
-              "id": "5403e07b-6535-42af-a309-1c487bcd14ad",
+              "id": "14551756-840d-49fb-8e9c-77bea89400b5",
               "leftValue": "={{ $json.headers['x-api-key'] }}",
               "rightValue": "={{ $env.SCREENER_API_KEY }}",
               "operator": {
@@ -52,7 +52,7 @@
       }
     },
     {
-      "id": "354618ab-ba6f-4579-905d-1416848b92bd",
+      "id": "d7537b49-77c2-4b1a-8b02-297643f92662",
       "name": "200 OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -69,7 +69,7 @@
       }
     },
     {
-      "id": "0171239f-b51d-46b9-bf45-b7f991b1ca7f",
+      "id": "6324e03c-dbe4-4725-ace5-f99a9709a3dd",
       "name": "401 Unauthorized",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -86,7 +86,7 @@
       }
     },
     {
-      "id": "d2233233-6d4a-4461-8f6e-c10d0dece7f6",
+      "id": "6183b897-5d80-45b8-bfa7-a7a66b63fd92",
       "name": "Resume agent (/review)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -124,7 +124,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "1e6ec78b-69e0-4c7b-9b82-853c312f9a62",
+      "id": "b431c3e7-a53d-4601-9fa9-959faaf70478",
       "name": "Check result",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -138,7 +138,7 @@
       }
     },
     {
-      "id": "52ab7b4a-3895-43d6-8de2-9d23bad2d3f9",
+      "id": "c660c6dd-8b28-4046-8c01-dc59b6bdf5af",
       "name": "Applied?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -156,7 +156,7 @@
           },
           "conditions": [
             {
-              "id": "f3e4a4c1-5b0d-44db-8ef6-2d82eea369de",
+              "id": "d4f0e254-c25e-4006-81f9-daa18bd29b01",
               "leftValue": "={{ $json.ok }}",
               "rightValue": "",
               "operator": {
@@ -172,7 +172,7 @@
       }
     },
     {
-      "id": "62c7b245-e9a2-424c-b3a0-e580f1d64f27",
+      "id": "75914625-68d3-44c5-af1f-be0cfb8495cb",
       "name": "Find candidate",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -213,7 +213,7 @@
       }
     },
     {
-      "id": "3bfd506f-a2a8-41f4-b89f-b35221473e3c",
+      "id": "de0e458f-01a9-4ec3-9b6e-6151938c1cb4",
       "name": "Package result",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -227,7 +227,7 @@
       }
     },
     {
-      "id": "fdd87723-7c5b-43cc-be3c-404c23cd99b2",
+      "id": "9a26b73d-5f25-411d-9b87-4a934f4036d8",
       "name": "Process result",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
@@ -246,7 +246,7 @@
       }
     },
     {
-      "id": "e7b10f34-1bc6-4033-983f-af30dd15b1a9",
+      "id": "1c4ab749-38e2-46e7-8d5b-8c4dfacf5f1b",
       "name": "Tell HR it failed",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -256,7 +256,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "=https://graph.facebook.com/{{ $env.META_GRAPH_VERSION || 'v24.0' }}/{{ $env.META_WA_PHONE_NUMBER_ID }}/messages",
+        "url": "=https://graph.facebook.com/{{ $env.META_GRAPH_VERSION || 'v25.0' }}/{{ $env.META_WA_PHONE_NUMBER_ID }}/messages",
         "options": {
           "timeout": 30000,
           "response": {

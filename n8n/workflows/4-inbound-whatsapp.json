@@ -2,7 +2,7 @@
   "name": "4 - Inbound WhatsApp messages",
   "nodes": [
     {
-      "id": "ffcaac07-f68d-4b07-bf57-1fdd01700115",
+      "id": "c41d5d75-0232-42ce-b664-079c3b662c42",
       "name": "Inbound message (from API)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -19,7 +19,7 @@
       "webhookId": "3493cfea-e2a4-5075-a1ec-8cba2351bfe7"
     },
     {
-      "id": "75478b0d-e10a-437c-aad0-b3064a9ce422",
+      "id": "6d9c7052-513f-4692-810f-8782c2b3b293",
       "name": "Plan reply",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -33,7 +33,7 @@
       }
     },
     {
-      "id": "61087fa5-088a-44c4-b8a9-bf7605567f01",
+      "id": "0766a825-eb8b-4a63-abc1-5e94a5aff40d",
       "name": "Respond",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -50,7 +50,7 @@
       }
     },
     {
-      "id": "17f9f75e-9604-4d5e-9bfc-8841aa164057",
+      "id": "0d0572aa-f987-4f65-b65b-c96f7848cda1",
       "name": "Anything to send?",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
@@ -68,7 +68,7 @@
           },
           "conditions": [
             {
-              "id": "145799e9-a9a6-4d1f-a233-df3189394fda",
+              "id": "bf82842a-0ba2-48fa-b978-24dc229be74c",
               "leftValue": "={{ !!$('Plan reply').item.json.wa }}",
               "rightValue": "",
               "operator": {
@@ -84,7 +84,7 @@
       }
     },
     {
-      "id": "f8124531-4f88-4ac8-b785-a39d39b364dd",
+      "id": "d3837f7e-cabe-4a71-b8c6-e1f5b0010e9b",
       "name": "Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -97,7 +97,7 @@
       }
     },
     {
-      "id": "d83ea908-0c78-4c8b-b3f9-361066300e5b",
+      "id": "5a689f20-268a-428f-9c02-6dd48c76935d",
       "name": "Send WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -107,7 +107,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "=https://graph.facebook.com/{{ $env.META_GRAPH_VERSION || 'v24.0' }}/{{ $env.META_WA_PHONE_NUMBER_ID }}/messages",
+        "url": "=https://graph.facebook.com/{{ $env.META_GRAPH_VERSION || 'v25.0' }}/{{ $env.META_WA_PHONE_NUMBER_ID }}/messages",
         "options": {
           "timeout": 30000,
           "response": {

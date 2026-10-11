@@ -641,9 +641,9 @@ def main() -> None:
     print(f"Exported 6 workflows to {OUT.relative_to(ROOT)}")
 
     if action == "activate":
+        # n8n 2.x: a sub-workflow must be published BEFORE the workflows that call it
+        # (ids is insertion-ordered: the "Process result" sub-workflow comes first)
         for name, wid in ids.items():
-            if name == process.name:
-                continue  # sub-workflows don't need activation
             api("POST", f"/workflows/{wid}/activate")
             print(f"  activated {name}")
 
