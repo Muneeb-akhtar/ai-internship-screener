@@ -117,6 +117,13 @@ Running record of the build so any new session (human or AI) can pick up where w
 - Vapi moved to the owner's **hr@example.com** account: new keys, `vapi.py sync` recreated the assistant
   (`2b225229-…`) from the repo files, and a new link page was verified. The old owner-account assistant is unused.
 
+- **Fairness finding (call 4 on the new account, 220 s):** Deepgram misheard words ("computer science" →
+  "the purpose science", "work culture" → "Walmart", mutable/immutable garbled). The scorer took them as the
+  candidate's errors (technical 2/10 → auto-reject 11/40). Fix: the prompts now say it's ASR output; possible
+  transcription errors lower **confidence**, not the score → human review. More keyterms. HR messages and
+  the audit log carry a recording link (the Vapi dashboard call page; raw recording URLs are private). Re-run of the
+  same call: confidence 0.60 twice → human_review + `low_confidence` + recording link. Commit `1487711`.
+
 ### Next steps
 1. Owner decision: should near-threshold rejects (e.g. 17–19) or any skipped question go to human review?
 2. Owner: rotate the Vapi private key (it was shared in chat).

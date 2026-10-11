@@ -60,6 +60,8 @@ class Settings(BaseSettings):
     # ---- Voice interview (Vapi) -------------------------------------------------
     vapi_public_key: str | None = None  # PUBLIC key: safe in the browser (restrict it in Vapi)
     vapi_assistant_id: str | None = None
+    # PRIVATE key: server-side only, used to fetch call recordings for HR (app/recordings.py)
+    vapi_private_key: SecretStr | None = None
     interview_link_ttl_hours: int = 72
 
     # Facts the voice assistant may share with candidates (sent as Vapi variableValues)

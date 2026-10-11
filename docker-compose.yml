@@ -120,9 +120,11 @@ services:
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      # Voice interview (Phase 3). The PUBLIC key is shown in the browser; the private key is NOT passed here.
+      # Voice interview (Phase 3). The PUBLIC key is shown in the browser. The PRIVATE key
+      # stays server-side: only used to fetch call recordings for HR (never sent to browsers).
       VAPI_PUBLIC_KEY: ${VAPI_PUBLIC_KEY:-}
       VAPI_ASSISTANT_ID: ${VAPI_ASSISTANT_ID:-}
+      VAPI_PRIVATE_KEY: ${VAPI_PRIVATE_KEY:-}
       COMPANY_NAME: ${COMPANY_NAME:-Our Company}
       INTERNSHIP_DURATION: ${INTERNSHIP_DURATION:-three months}
       INTERNSHIP_SCHEDULE: ${INTERNSHIP_SCHEDULE:-full-time, Monday to Friday}

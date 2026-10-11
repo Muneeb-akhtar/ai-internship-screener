@@ -34,6 +34,8 @@ from app.interview.routes import get_links
 from app.interview.routes import router as interview_router
 from app.llm import build_llm
 from app.logging_config import configure_logging
+from app.recordings import recording_link
+from app.recordings import router as recordings_router
 from app.schemas import EvaluateRequest, EvaluationResult, ReviewRequest
 from app.security import require_api_key
 from app.tools.calendar import build_scheduler
@@ -83,6 +85,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="AI Internship Screener API", version=__version__, lifespan=lifespan)
 app.include_router(interview_router)
+app.include_router(recordings_router)
 
 
 @app.middleware("http")
@@ -163,6 +166,10 @@ async def evaluate(
     req: EvaluateRequest, service: Service, links: Annotated[LinkStore, Depends(get_links)]
 ) -> EvaluationResult:
     """Called by n8n after Vapi's end-of-call report. Synchronous: takes ~5-60 s (LLM calls)."""
+    if req.call_id and not req.recording_url:
+        # Signed link so HR can listen to the call (speech-to-text isn't perfect).
+        # "-rerun-..." suffixes (scripts/vapi.py --rerun) are stripped to get Vapi's real id.
+        req.recording_url = recording_link(get_settings(), req.call_id.split("-rerun-")[0])
     if req.interview_token:
         link = await links.get(req.interview_token)
         if link is None or link.candidate_id != req.candidate_id:

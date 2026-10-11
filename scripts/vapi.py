@@ -138,9 +138,7 @@ def cmd_evaluate(args: argparse.Namespace) -> None:
         "call_id": call["id"],
         "call_duration_seconds": duration,
         "interview_token": meta.get("interview_token"),
-        # Raw recording URLs are private storage links, so HR gets the Vapi dashboard page for the
-        # call instead (login required -> candidate audio is never a public link in WhatsApp).
-        "recording_url": f"https://dashboard.vapi.ai/calls/{call['id']}",
+        # recording_url is added by the API: a signed, expiring /recordings/<call_id> link for HR
     }
     if args.rerun:  # new thread id -> evaluate again (e.g. after a prompt change)
         body["call_id"] = f"{call['id']}-rerun-{datetime.now():%H%M%S}"
