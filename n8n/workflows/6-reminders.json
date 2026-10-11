@@ -2,7 +2,7 @@
   "name": "6 - Reminders and expiry",
   "nodes": [
     {
-      "id": "a38fe1d9-e7a8-40ab-9700-663a5181a3e4",
+      "id": "d908cf64-024c-4768-ab9d-cfb337af4234",
       "name": "Every hour",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -22,7 +22,7 @@
       }
     },
     {
-      "id": "cdd72f91-98e0-4dbd-9dc7-1ffd3989e454",
+      "id": "3468ccfb-0f5b-4676-86b3-852b9053a0b2",
       "name": "Get invited candidates",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -63,7 +63,7 @@
       }
     },
     {
-      "id": "6c8984cf-c32d-46b0-81be-77eed710eb36",
+      "id": "5d196093-9213-438b-8c2e-6900b518eade",
       "name": "Link status",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -98,7 +98,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "a50e8fa1-0141-461e-83f3-6f91732a22b1",
+      "id": "ea863530-d423-41bd-9e5b-83cd28b4aaa9",
       "name": "Decide",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -107,17 +107,17 @@
         300
       ],
       "parameters": {
-        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n\nconst out = [];\nconst rows = $('Get invited candidates').all();\n$input.all().forEach((item, i) => {\n  const row = rows[i].json, s = item.json.body || {};\n  if (item.json.statusCode !== 200) return;\n  const hours = (Date.now() - Date.parse(s.created_at)) / 36e5;\n  if (s.status === 'sent' && hours >= 24) {   // never opened the link -> one reminder\n    out.push({ json: {\n      wa: template(waNumber(row.phone), 'screening_update', [firstName(row.name),\n        `a reminder to complete your 5-minute screening interview for the ${row.role} internship: ${s.url} (link valid until ${pkt(s.expires_at)})`]),\n      fields: { candidate_id: String(row.candidate_id), status: 'Reminded', updated_at: NOW } } });\n  } else if (s.status === 'expired') {\n    out.push({ json: { wa: null, fields: { candidate_id: String(row.candidate_id), status: 'No response', updated_at: NOW } } });\n  }\n});\nreturn out;"
+        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n// Delivery channels (NOTIFY_CHANNELS=email,whatsapp). WhatsApp messages are still attempted\n// when enabled; email makes sure people are reached even if WhatsApp is blocked/unavailable.\nconst CHANNELS = String($env.NOTIFY_CHANNELS || 'email,whatsapp').split(',').map(s => s.trim());\nconst USE_WA = CHANNELS.includes('whatsapp'), USE_EMAIL = CHANNELS.includes('email');\n\nconst out = [];\nconst rows = $('Get invited candidates').all();\n$input.all().forEach((item, i) => {\n  const row = rows[i].json, s = item.json.body || {};\n  if (item.json.statusCode !== 200) return;\n  const hours = (Date.now() - Date.parse(s.created_at)) / 36e5;\n  const id = String(row.candidate_id), first = firstName(row.name), to = waNumber(row.phone);\n  if (s.status === 'sent' && hours >= 24) {   // never opened the link -> one reminder\n    const note = `a reminder to complete your 5-minute screening interview for the ${row.role} internship: ${s.url} (link valid until ${pkt(s.expires_at)})`;\n    out.push({ json: {\n      wa: USE_WA && to ? template(to, 'screening_update', [first, note]) : null,\n      email: USE_EMAIL && row.email ? { to: row.email, subject: `Reminder: your ${row.role} screening interview`,\n        message: `Hi ${first},\\n\\nJust ${note}.\\n\\nBest regards,\\nThe Hiring Team` } : null,\n      fields: { candidate_id: id, status: 'Reminded', updated_at: NOW } } });\n  } else if (s.status === 'expired') {\n    out.push({ json: { wa: null, email: null, fields: { candidate_id: id, status: 'No response', updated_at: NOW } } });\n  }\n});\nreturn out;"
       }
     },
     {
-      "id": "b838c93f-396f-44ba-90c5-87b0f1537938",
-      "name": "Send reminder?",
-      "type": "n8n-nodes-base.if",
+      "id": "b4ba6ce5-45a5-46bd-b351-8030fab266cb",
+      "name": "WhatsApp reminder?",
+      "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
       "position": [
         960,
-        300
+        160
       ],
       "parameters": {
         "conditions": {
@@ -129,8 +129,8 @@
           },
           "conditions": [
             {
-              "id": "fde4d0bb-99ec-495c-ad22-1e00490903a6",
-              "leftValue": "={{ !!$json.wa }}",
+              "id": "bb1721c5-7f5e-4131-98e1-a4cfc8372616",
+              "leftValue": "={{ !!($json.wa) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -145,13 +145,13 @@
       }
     },
     {
-      "id": "766dc721-0ebb-4597-b212-9bc3ad814d5e",
-      "name": "Send reminder",
+      "id": "f8d4fcb5-5b43-4c1d-99ec-b6bcaf331a1f",
+      "name": "Send WhatsApp reminder",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
         1200,
-        200
+        160
       ],
       "parameters": {
         "method": "POST",
@@ -183,39 +183,91 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "3e4c1a1e-d438-421b-8e9f-eef3c6d1a14a",
-      "name": "Reminded fields",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "fc1f277d-6099-4abd-8314-659e017e3e8f",
+      "name": "Email reminder?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
       "position": [
-        1440,
-        200
+        960,
+        320
       ],
       "parameters": {
-        "jsCode": "return $('Send reminder?').all().filter(i => i.json.wa).map(i => ({ json: i.json.fields }));"
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "19bcb7c3-4dd4-4b32-8a96-b46e7821d156",
+              "leftValue": "={{ !!($json.email) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
       }
     },
     {
-      "id": "4df9dc28-5a64-414e-a475-4c03a33d15ce",
-      "name": "Expired fields",
+      "id": "8fbe930f-0512-44a2-9d55-affc3619ceda",
+      "name": "Send email reminder",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1200,
+        320
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.email.to }}",
+        "subject": "={{ $json.email.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.email.message }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CREDENTIAL_ID",
+          "name": "Gmail (screener)"
+        }
+      }
+    },
+    {
+      "id": "856ae6c1-2b56-4793-822b-86db29af77be",
+      "name": "Sheet fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
-        420
+        960,
+        480
       ],
       "parameters": {
         "jsCode": "return $input.all().map(i => ({ json: i.json.fields }));"
       }
     },
     {
-      "id": "1cd8756b-9a1b-4593-b617-57bb9b5bd6bb",
+      "id": "1c48007f-0e6f-4bc7-ad02-8500797c7ac8",
       "name": "Update sheet",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1680,
-        300
+        1200,
+        480
       ],
       "parameters": {
         "operation": "update",
@@ -433,54 +485,46 @@
       "main": [
         [
           {
-            "node": "Send reminder?",
+            "node": "WhatsApp reminder?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email reminder?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Sheet fields",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Send reminder?": {
+    "WhatsApp reminder?": {
       "main": [
         [
           {
-            "node": "Send reminder",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Expired fields",
+            "node": "Send WhatsApp reminder",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Send reminder": {
+    "Email reminder?": {
       "main": [
         [
           {
-            "node": "Reminded fields",
+            "node": "Send email reminder",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Reminded fields": {
-      "main": [
-        [
-          {
-            "node": "Update sheet",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Expired fields": {
+    "Sheet fields": {
       "main": [
         [
           {

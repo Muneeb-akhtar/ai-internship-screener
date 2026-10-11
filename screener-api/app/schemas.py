@@ -69,4 +69,6 @@ class EvaluationResult(BaseModel):
     hr_review: dict | None = None
     incomplete_reason: str | None = None
     recording_url: str | None = None
+    # Signed one-click links for HR (only while status == "pending_review")
+    review_links: dict[str, str] | None = None
     llm_model: str | None = None

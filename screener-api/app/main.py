@@ -28,7 +28,9 @@ from app.agent.graph import build_graph
 from app.agent.nodes import ScreeningNodes
 from app.agent.service import NotPendingReview, ScreeningService, ThreadNotFound
 from app.audit import AuditLog
-from app.config import get_settings
+from app.config import Settings, get_settings
+from app.hr_review import review_links
+from app.hr_review import router as hr_review_router
 from app.interview.links import LinkStore, PostgresLinkStore
 from app.interview.routes import get_links
 from app.interview.routes import router as interview_router
@@ -88,6 +90,7 @@ app = FastAPI(title="AI Internship Screener API", version=__version__, lifespan=
 app.include_router(interview_router)
 app.include_router(recordings_router)
 app.include_router(whatsapp_router)
+app.include_router(hr_review_router)
 
 
 @app.middleware("http")
@@ -165,13 +168,16 @@ protected = [Depends(require_api_key)]
 
 @app.post("/evaluate", tags=["agent"], dependencies=protected)
 async def evaluate(
-    req: EvaluateRequest, service: Service, links: Annotated[LinkStore, Depends(get_links)]
+    req: EvaluateRequest,
+    service: Service,
+    links: Annotated[LinkStore, Depends(get_links)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> EvaluationResult:
     """Called by n8n after Vapi's end-of-call report. Synchronous: takes ~5-60 s (LLM calls)."""
     if req.call_id and not req.recording_url:
         # Signed link so HR can listen to the call (speech-to-text isn't perfect).
         # "-rerun-..." suffixes (scripts/vapi.py --rerun) are stripped to get Vapi's real id.
-        req.recording_url = recording_link(get_settings(), req.call_id.split("-rerun-")[0])
+        req.recording_url = recording_link(settings, req.call_id.split("-rerun-")[0])
     if req.interview_token:
         link = await links.get(req.interview_token)
         if link is None or link.candidate_id != req.candidate_id:
@@ -188,6 +194,8 @@ async def evaluate(
     # An incomplete call leaves the link usable for its remaining attempt
     if req.interview_token and result.decision != "incomplete":
         await links.mark_evaluated(req.interview_token, result.thread_id)
+    if result.status == "pending_review":  # one-click Approve/Reject links for HR's email
+        result.review_links = review_links(settings, result.thread_id)
     return result
 
 

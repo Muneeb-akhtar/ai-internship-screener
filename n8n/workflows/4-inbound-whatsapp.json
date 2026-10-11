@@ -2,7 +2,7 @@
   "name": "4 - Inbound WhatsApp messages",
   "nodes": [
     {
-      "id": "c41d5d75-0232-42ce-b664-079c3b662c42",
+      "id": "6afd3ea8-3b84-48dc-8597-e31e6660144a",
       "name": "Inbound message (from API)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -19,7 +19,7 @@
       "webhookId": "3493cfea-e2a4-5075-a1ec-8cba2351bfe7"
     },
     {
-      "id": "6d9c7052-513f-4692-810f-8782c2b3b293",
+      "id": "d9b169f4-7622-4bda-a258-a5bbf97db314",
       "name": "Plan reply",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -28,12 +28,12 @@
         300
       ],
       "parameters": {
-        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n\nconst ok = $json.headers['x-api-key'] === $env.SCREENER_API_KEY;\nconst m = $json.body || {};\nconst hrTo = waNumber($env.HR_WHATSAPP_NUMBER);\nlet wa = null;\nif (ok && m.kind === 'hr_message') {\n  // HR replied within the 24h window -> a normal text message is allowed\n  wa = text(hrTo, 'To decide on a borderline candidate, reply exactly:\\nAPPROVE <reference>\\nor\\nREJECT <reference> optional note\\n(the reference is in the alert, e.g. C002-c83ec8f0)');\n} else if (ok && m.kind === 'candidate_message' && hrTo) {\n  wa = template(hrTo, 'hr_alert', [`Message from candidate ${m.name || ''} (+${m.from}): \"${clean(m.text, 600)}\"`]);\n}\nreturn { json: { ok, wa } };",
+        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n// Delivery channels (NOTIFY_CHANNELS=email,whatsapp). WhatsApp messages are still attempted\n// when enabled; email makes sure people are reached even if WhatsApp is blocked/unavailable.\nconst CHANNELS = String($env.NOTIFY_CHANNELS || 'email,whatsapp').split(',').map(s => s.trim());\nconst USE_WA = CHANNELS.includes('whatsapp'), USE_EMAIL = CHANNELS.includes('email');\n\nconst ok = $json.headers['x-api-key'] === $env.SCREENER_API_KEY;\nconst m = $json.body || {};\nconst hrTo = waNumber($env.HR_WHATSAPP_NUMBER);\nlet wa = null;\nif (ok && m.kind === 'hr_message') {\n  // HR replied within the 24h window -> a normal text message is allowed\n  wa = text(hrTo, 'To decide on a borderline candidate, reply exactly:\\nAPPROVE <reference>\\nor\\nREJECT <reference> optional note\\n(the reference is in the alert, e.g. C002-c83ec8f0)');\n} else if (ok && m.kind === 'candidate_message' && hrTo) {\n  wa = template(hrTo, 'hr_alert', [`Message from candidate ${m.name || ''} (+${m.from}): \"${clean(m.text, 600)}\"`]);\n}\nreturn { json: { ok, wa } };",
         "mode": "runOnceForEachItem"
       }
     },
     {
-      "id": "0766a825-eb8b-4a63-abc1-5e94a5aff40d",
+      "id": "83058009-33db-490d-9745-79df8d977a26",
       "name": "Respond",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -50,7 +50,7 @@
       }
     },
     {
-      "id": "0d0572aa-f987-4f65-b65b-c96f7848cda1",
+      "id": "63b17ff8-c000-4ebf-8c54-b4c91b729b4a",
       "name": "Anything to send?",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
@@ -68,7 +68,7 @@
           },
           "conditions": [
             {
-              "id": "bf82842a-0ba2-48fa-b978-24dc229be74c",
+              "id": "caec9290-78ec-4d0b-be1c-3a667d5582ad",
               "leftValue": "={{ !!$('Plan reply').item.json.wa }}",
               "rightValue": "",
               "operator": {
@@ -84,7 +84,7 @@
       }
     },
     {
-      "id": "d3837f7e-cabe-4a71-b8c6-e1f5b0010e9b",
+      "id": "56e37558-5179-4bbd-89b5-719049c76f37",
       "name": "Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -97,7 +97,7 @@
       }
     },
     {
-      "id": "5a689f20-268a-428f-9c02-6dd48c76935d",
+      "id": "8243851d-b3f5-44bb-acfe-0566cbc8c3b4",
       "name": "Send WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,

@@ -2,7 +2,7 @@
   "name": "1 - Invite new candidates",
   "nodes": [
     {
-      "id": "762f835f-c20a-443e-b4bc-61a75a425add",
+      "id": "8b2bbcbc-c4d9-4f1b-98f1-e8224d2d93fd",
       "name": "Every 5 minutes",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -22,7 +22,7 @@
       }
     },
     {
-      "id": "99364439-ccc4-44c0-84b5-f7f6f654b11a",
+      "id": "d1123b46-37a9-4759-8aa1-3db0af5371da",
       "name": "Get new candidates",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -63,7 +63,7 @@
       }
     },
     {
-      "id": "4c5c3335-c608-42e2-b340-d53d797cd949",
+      "id": "b13d2bbe-fc43-418d-ae52-ef9a5a8bc3df",
       "name": "Create interview link",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -95,7 +95,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "a8e6a107-bf96-4b3b-8d1a-4066f2084d73",
+      "id": "d231c553-6219-4149-aa7e-9700c40098da",
       "name": "Build invite",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -104,18 +104,52 @@
         300
       ],
       "parameters": {
-        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n\nconst row = $('Get new candidates').item.json;\nreturn { json: {\n  candidate_id: String(row.candidate_id), url: $json.url,\n  wa: template(waNumber(row.phone), 'screening_invite', [firstName(row.name), row.role, $json.url]),\n} };",
+        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n// Delivery channels (NOTIFY_CHANNELS=email,whatsapp). WhatsApp messages are still attempted\n// when enabled; email makes sure people are reached even if WhatsApp is blocked/unavailable.\nconst CHANNELS = String($env.NOTIFY_CHANNELS || 'email,whatsapp').split(',').map(s => s.trim());\nconst USE_WA = CHANNELS.includes('whatsapp'), USE_EMAIL = CHANNELS.includes('email');\n\nconst row = $('Get new candidates').item.json;\nconst to = waNumber(row.phone), first = firstName(row.name);\nreturn { json: {\n  candidate_id: String(row.candidate_id), url: $json.url,\n  wa: USE_WA && to ? template(to, 'screening_invite', [first, row.role, $json.url]) : null,\n  email: USE_EMAIL && row.email ? { to: row.email, subject: `Your screening interview for the ${row.role} internship`,\n    message: `Hi ${first},\\n\\nThank you for applying for the ${row.role} internship.\\n\\n` +\n      `Please complete your 5-minute AI screening interview here:\\n${$json.url}\\n\\n` +\n      `It runs in your browser (Chrome/Edge) - find a quiet place and allow microphone access. ` +\n      `The link is valid for 3 days.\\n\\nThe call is recorded so our HR team can review it; people, not AI, ` +\n      `make every hiring decision.\\n\\nBest regards,\\nThe Hiring Team` } : null,\n  fields: { candidate_id: String(row.candidate_id), interview_link: $json.url, status: 'Invited', updated_at: NOW },\n} };",
         "mode": "runOnceForEachItem"
       }
     },
     {
-      "id": "08fec3d8-3c63-48bf-8cad-46f2ea8d2293",
+      "id": "45d5a967-57c3-4451-a4ec-a29e290139e3",
+      "name": "WhatsApp invite?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "811a219b-a488-49f8-b340-5c843a4847fe",
+              "leftValue": "={{ !!($json.wa) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fa37f4bf-ff02-43ce-8f0b-0b140f898b6a",
       "name": "Send WhatsApp invite",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        960,
-        300
+        1200,
+        160
       ],
       "parameters": {
         "method": "POST",
@@ -147,27 +181,91 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "606066dc-6fcb-4050-92ea-44a667184430",
+      "id": "d613e20c-8847-4824-b9c8-f248f45fc812",
+      "name": "Email invite?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        320
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2bfe9960-f93c-4e20-ac6a-e505ab152751",
+              "leftValue": "={{ !!($json.email) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "35527b12-f390-4462-b530-44c5f2790857",
+      "name": "Send email invite",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1200,
+        320
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.email.to }}",
+        "subject": "={{ $json.email.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.email.message }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CREDENTIAL_ID",
+          "name": "Gmail (screener)"
+        }
+      }
+    },
+    {
+      "id": "455a5662-2c8f-43a2-b4ea-b39e73cc5821",
       "name": "Sheet fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
-        300
+        960,
+        480
       ],
       "parameters": {
-        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n\nconst b = $('Build invite').item.json;\nconst ok = $json.statusCode === 200;\nreturn { json: { candidate_id: b.candidate_id, interview_link: b.url,\n  status: ok ? 'Invited' : 'Invite failed', updated_at: NOW,\n  flags: ok ? '' : `whatsapp_error: ${clean(JSON.stringify($json.body?.error?.message || $json.body), 200)}` } };",
-        "mode": "runOnceForEachItem"
+        "jsCode": "return $input.all().map(i => ({ json: i.json.fields }));"
       }
     },
     {
-      "id": "6f96e95e-2452-4fe9-a4d4-67bfb6095d88",
+      "id": "83e9da55-cb31-4bef-ad0b-7a15fb767f68",
       "name": "Update sheet",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1440,
-        300
+        1200,
+        480
       ],
       "parameters": {
         "operation": "update",
@@ -385,6 +483,27 @@
       "main": [
         [
           {
+            "node": "WhatsApp invite?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email invite?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Sheet fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp invite?": {
+      "main": [
+        [
+          {
             "node": "Send WhatsApp invite",
             "type": "main",
             "index": 0
@@ -392,11 +511,11 @@
         ]
       ]
     },
-    "Send WhatsApp invite": {
+    "Email invite?": {
       "main": [
         [
           {
-            "node": "Sheet fields",
+            "node": "Send email invite",
             "type": "main",
             "index": 0
           }

@@ -3,7 +3,7 @@
 # (n8n editor, /evaluate, /review, /docs) stays private on your PC.
 :8080 {
 	# Candidate interview pages, HR recording links, Meta WhatsApp webhook, health check -> API
-	@api path /interview/* /recordings/* /whatsapp/webhook /health
+	@api path /interview/* /recordings/* /hr/review/* /whatsapp/webhook /health
 	handle @api {
 		reverse_proxy screener-api:8000
 	}

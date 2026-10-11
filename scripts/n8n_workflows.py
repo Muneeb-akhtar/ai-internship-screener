@@ -71,6 +71,10 @@ function pkt(iso) {
     month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';
 }
 const NOW = new Date().toISOString();
+// Delivery channels (NOTIFY_CHANNELS=email,whatsapp). WhatsApp messages are still attempted
+// when enabled; email makes sure people are reached even if WhatsApp is blocked/unavailable.
+const CHANNELS = String($env.NOTIFY_CHANNELS || 'email,whatsapp').split(',').map(s => s.trim());
+const USE_WA = CHANNELS.includes('whatsapp'), USE_EMAIL = CHANNELS.includes('email');
 """
 
 
@@ -178,6 +182,24 @@ def switch_on(field: str, keys: list[str]) -> dict:
     return {"rules": {"values": rules}, "options": {}}
 
 
+def only_if(wf: WF, name: str, expr: str, pos: tuple[int, int]) -> str:
+    """Filter node: lets an item through only when `expr` (a JS expression) is truthy."""
+    return wf.add(name, "n8n-nodes-base.filter", 2.2, {
+        "conditions": {"options": {"caseSensitive": True, "leftValue": "", "typeValidation": "loose", "version": 2},
+                       "conditions": [{"id": str(uuid.uuid4()), "leftValue": f"={{{{ !!({expr}) }}}}", "rightValue": "",
+                                       "operator": {"type": "boolean", "operation": "true", "singleValue": True}}],
+                       "combinator": "and"}, "options": {}}, pos=pos)
+
+
+def gmail(wf: WF, name: str, creds: dict, pos: tuple[int, int], src: str = "$json.email") -> str:
+    """Send an email described by {to, subject, message} at `src`."""
+    return wf.add(name, "n8n-nodes-base.gmail", 2.1,
+                  {"resource": "message", "operation": "send", "sendTo": f"={{{{ {src}.to }}}}",
+                   "subject": f"={{{{ {src}.subject }}}}", "emailType": "text", "message": f"={{{{ {src}.message }}}}",
+                   "options": {"appendAttribution": False}},
+                  pos=pos, creds=creds["gmail"], onError="continueRegularOutput", **RETRY)
+
+
 def webhook(wf: WF, name: str, path: str, pos: tuple[int, int]) -> str:
     return wf.add(name, "n8n-nodes-base.webhook", 2,
                   {"httpMethod": "POST", "path": path, "responseMode": "responseNode", "options": {}},
@@ -204,11 +226,14 @@ for (const item of $input.all()) {
   const to = waNumber(row.phone), hrTo = waNumber($env.HR_WHATSAPP_NUMBER);
   const hrEmail = $env.HR_EMAIL, email = row.email;
   const push = (channel, data) => out.push({ json: { channel, ...data } });
-  const hrAlert = (msg) => hrTo && push('whatsapp', { wa: template(hrTo, 'hr_alert', [msg]) });
+  const hrAlert = (msg, subject) => {
+    if (USE_WA && hrTo) push('whatsapp', { wa: template(hrTo, 'hr_alert', [msg]) });
+    if (USE_EMAIL && hrEmail && subject) push('email', { to: hrEmail, subject, message: msg });
+  };
 
   if (error || !r) {  // evaluation failed even after retries
     push('sheet', { fields: { candidate_id: cid, status: 'Error', updated_at: NOW } });
-    hrAlert(`Evaluation FAILED for ${name} (${cid}): ${error || 'no result'}. Check n8n executions.`);
+    hrAlert(`Evaluation FAILED for ${name} (${cid}): ${error || 'no result'}. Check n8n executions.`, `[Error] Evaluation failed - ${name}`);
     continue;
   }
   const s = r.scores;
@@ -222,32 +247,36 @@ for (const item of $input.all()) {
     case 'Scheduled':
     case 'Shortlisted':
       push('sheet', { fields });
-      if (to) push('whatsapp', { wa: template(to, 'screening_update', [first, body(m.candidate)]) });
-      if (email) push('email', { to: email, subject: `Interview invitation - ${r.candidate_id ? row.role : ''} internship`, message: m.candidate });
+      if (USE_WA && to) push('whatsapp', { wa: template(to, 'screening_update', [first, body(m.candidate)]) });
+      if (USE_EMAIL && email) push('email', { to: email, subject: `Interview invitation - ${row.role} internship`, message: m.candidate });
       hrAlert(m.hr);
       if (hrEmail) push('email', { to: hrEmail, subject: `[Shortlisted] ${name} - ${row.role}`, message: `${m.hr}\n\nThread: ${r.thread_id}` });
       break;
     case 'Rejected':
       push('sheet', { fields });
-      if (to) push('whatsapp', { wa: template(to, 'screening_update', [first, body(m.candidate)]) });
-      if (email) push('email', { to: email, subject: `Your ${row.role} internship application`, message: m.candidate });
+      if (USE_WA && to) push('whatsapp', { wa: template(to, 'screening_update', [first, body(m.candidate)]) });
+      if (USE_EMAIL && email) push('email', { to: email, subject: `Your ${row.role} internship application`, message: m.candidate });
       if (hrEmail) push('email', { to: hrEmail, subject: `[Rejected] ${name} - ${row.role}`, message: `${m.hr}\n\nThread: ${r.thread_id}` });
       break;
     case 'Human Review':
       push('sheet', { fields });
-      hrAlert(m.hr);  // contains "Reply APPROVE <thread> or REJECT <thread>"
-      if (hrEmail) push('email', { to: hrEmail, subject: `[Decision needed] ${name} - ${row.role}`, message: m.hr });
+      if (USE_WA && hrTo) push('whatsapp', { wa: template(hrTo, 'hr_alert', [m.hr]) });  // "Reply APPROVE <thread>..."
+      if (hrEmail) {  // one-click signed links (POST-confirmed) created by the API
+        const l = r.review_links || {};
+        push('email', { to: hrEmail, subject: `[Decision needed] ${name} - ${row.role}`,
+          message: `Borderline candidate - your decision is needed.\n\n${m.hr.replace(/\n*Reply APPROVE[\s\S]*$/, '')}\n\nAPPROVE (schedule interview): ${l.approve}\nREJECT: ${l.reject}\n\nThe links expire in 7 days.` });
+      }
       break;
     case 'Incomplete':
       if (prev_status !== 'Re-invited') {  // edge case: one new link after a dropped/short call
-        push('reinvite', { candidate_id: cid, name, role: row.role, to });
+        push('reinvite', { candidate_id: cid, name, role: row.role, to, email });
       } else {
         push('sheet', { fields });
-        hrAlert(`${name} (${cid}) did not complete the screening twice (${r.incomplete_reason}). Please follow up personally.`);
+        hrAlert(`${name} (${cid}) did not complete the screening twice (${r.incomplete_reason}). Please follow up personally.`, `[Follow up] ${name} did not complete the screening`);
       }
       break;
   }
-  if ((r.flags || []).includes('asked_for_human')) hrAlert(`${name} (${cid}) asked to speak with a person during the screening.`);
+  if ((r.flags || []).includes('asked_for_human')) hrAlert(`${name} (${cid}) asked to speak with a person during the screening.`, `[Follow up] ${name} asked for a person`);
 }
 return out;
 """), pos=(240, 300))
@@ -269,25 +298,32 @@ return out;
                        full=False), pos=(720, 640), **RETRY)
     reinv = wf.add("Re-invite message", "n8n-nodes-base.code", 2, code(r"""
 const src = $('Route').item.json;
+const note = `your screening call ended early, no problem. Here is a new link to try again: ${$json.url}`;
 return { json: {
-  wa: template(src.to, 'screening_update', [firstName(src.name),
-    `your screening call ended early, no problem. Here is a new link to try again: ${$json.url}`]),
+  wa: USE_WA && src.to ? template(src.to, 'screening_update', [firstName(src.name), note]) : null,
+  email: USE_EMAIL && src.email ? { to: src.email, subject: `New link for your ${src.role} screening interview`,
+    message: `Hi ${firstName(src.name)},\n\n${note.charAt(0).toUpperCase() + note.slice(1)}\n\nThe Hiring Team` } : null,
   fields: { candidate_id: src.candidate_id, status: 'Re-invited', interview_link: $json.url, updated_at: NOW },
 } };
 """, each=True), pos=(960, 640))
-    send2 = wa_send(wf, "Send re-invite", (1200, 640))
+    has_wa2 = only_if(wf, "WhatsApp re-invite?", "$json.wa", (1200, 560))
+    send2 = wa_send(wf, "Send re-invite", (1440, 560))
+    has_mail2 = only_if(wf, "Email re-invite?", "$json.email", (1200, 720))
+    mail2 = gmail(wf, "Email re-invite", creds, (1440, 720))
     fields2 = wf.add("Re-invite sheet fields", "n8n-nodes-base.code", 2,
-                     {"jsCode": "return $('Re-invite message').all().map(i => ({ json: i.json.fields }));"},
-                     pos=(1440, 640))
+                     {"jsCode": "return $input.all().map(i => ({ json: i.json.fields }));"}, pos=(1200, 880))
     upd2 = wf.add("Update sheet (re-invited)", "n8n-nodes-base.googleSheets", 4.7, sheet_update(),
-                  pos=(1680, 640), creds=creds["sheets"], **RETRY)
+                  pos=(1440, 880), creds=creds["sheets"], **RETRY)
     wf.chain(trig, plan, route)
     wf.link(route, unwrap, 0)
     wf.link(route, send, 1)
     wf.link(route, mail, 2)
     wf.link(route, link, 3)
     wf.chain(unwrap, upd)
-    wf.chain(link, reinv, send2, fields2, upd2)
+    wf.chain(link, reinv)
+    for branch in ((has_wa2, send2), (has_mail2, mail2), (fields2, upd2)):
+        wf.link(reinv, branch[0])
+        wf.chain(*branch)
     return wf
 
 
@@ -303,22 +339,31 @@ def wf_invite(creds: dict) -> WF:
                        full=False), pos=(480, 300), **RETRY)
     build = wf.add("Build invite", "n8n-nodes-base.code", 2, code(r"""
 const row = $('Get new candidates').item.json;
+const to = waNumber(row.phone), first = firstName(row.name);
 return { json: {
   candidate_id: String(row.candidate_id), url: $json.url,
-  wa: template(waNumber(row.phone), 'screening_invite', [firstName(row.name), row.role, $json.url]),
+  wa: USE_WA && to ? template(to, 'screening_invite', [first, row.role, $json.url]) : null,
+  email: USE_EMAIL && row.email ? { to: row.email, subject: `Your screening interview for the ${row.role} internship`,
+    message: `Hi ${first},\n\nThank you for applying for the ${row.role} internship.\n\n` +
+      `Please complete your 5-minute AI screening interview here:\n${$json.url}\n\n` +
+      `It runs in your browser (Chrome/Edge) - find a quiet place and allow microphone access. ` +
+      `The link is valid for 3 days.\n\nThe call is recorded so our HR team can review it; people, not AI, ` +
+      `make every hiring decision.\n\nBest regards,\nThe Hiring Team` } : null,
+  fields: { candidate_id: String(row.candidate_id), interview_link: $json.url, status: 'Invited', updated_at: NOW },
 } };
 """, each=True), pos=(720, 300))
-    send = wa_send(wf, "Send WhatsApp invite", (960, 300))
-    fields = wf.add("Sheet fields", "n8n-nodes-base.code", 2, code(r"""
-const b = $('Build invite').item.json;
-const ok = $json.statusCode === 200;
-return { json: { candidate_id: b.candidate_id, interview_link: b.url,
-  status: ok ? 'Invited' : 'Invite failed', updated_at: NOW,
-  flags: ok ? '' : `whatsapp_error: ${clean(JSON.stringify($json.body?.error?.message || $json.body), 200)}` } };
-""", each=True), pos=(1200, 300))
-    upd = wf.add("Update sheet", "n8n-nodes-base.googleSheets", 4.7, sheet_update(), pos=(1440, 300),
+    has_wa = only_if(wf, "WhatsApp invite?", "$json.wa", (960, 160))
+    send = wa_send(wf, "Send WhatsApp invite", (1200, 160))
+    has_mail = only_if(wf, "Email invite?", "$json.email", (960, 320))
+    mail = gmail(wf, "Send email invite", creds, (1200, 320))
+    fields = wf.add("Sheet fields", "n8n-nodes-base.code", 2,
+                    {"jsCode": "return $input.all().map(i => ({ json: i.json.fields }));"}, pos=(960, 480))
+    upd = wf.add("Update sheet", "n8n-nodes-base.googleSheets", 4.7, sheet_update(), pos=(1200, 480),
                  creds=creds["sheets"], **RETRY)
-    wf.chain(sched, rows, link, build, send, fields, upd)
+    wf.chain(sched, rows, link, build)
+    for branch in ((has_wa, send), (has_mail, mail), (fields, upd)):
+        wf.link(build, branch[0])
+        wf.chain(*branch)
     return wf
 
 
@@ -484,35 +529,32 @@ $input.all().forEach((item, i) => {
   const row = rows[i].json, s = item.json.body || {};
   if (item.json.statusCode !== 200) return;
   const hours = (Date.now() - Date.parse(s.created_at)) / 36e5;
+  const id = String(row.candidate_id), first = firstName(row.name), to = waNumber(row.phone);
   if (s.status === 'sent' && hours >= 24) {   // never opened the link -> one reminder
+    const note = `a reminder to complete your 5-minute screening interview for the ${row.role} internship: ${s.url} (link valid until ${pkt(s.expires_at)})`;
     out.push({ json: {
-      wa: template(waNumber(row.phone), 'screening_update', [firstName(row.name),
-        `a reminder to complete your 5-minute screening interview for the ${row.role} internship: ${s.url} (link valid until ${pkt(s.expires_at)})`]),
-      fields: { candidate_id: String(row.candidate_id), status: 'Reminded', updated_at: NOW } } });
+      wa: USE_WA && to ? template(to, 'screening_update', [first, note]) : null,
+      email: USE_EMAIL && row.email ? { to: row.email, subject: `Reminder: your ${row.role} screening interview`,
+        message: `Hi ${first},\n\nJust ${note}.\n\nBest regards,\nThe Hiring Team` } : null,
+      fields: { candidate_id: id, status: 'Reminded', updated_at: NOW } } });
   } else if (s.status === 'expired') {
-    out.push({ json: { wa: null, fields: { candidate_id: String(row.candidate_id), status: 'No response', updated_at: NOW } } });
+    out.push({ json: { wa: null, email: null, fields: { candidate_id: id, status: 'No response', updated_at: NOW } } });
   }
 });
 return out;
 """), pos=(720, 300))
-    has = wf.add("Send reminder?", "n8n-nodes-base.if", 2.2, {
-        "conditions": {"options": {"caseSensitive": True, "leftValue": "", "typeValidation": "loose", "version": 2},
-                       "conditions": [{"id": str(uuid.uuid4()), "leftValue": "={{ !!$json.wa }}", "rightValue": "",
-                                       "operator": {"type": "boolean", "operation": "true", "singleValue": True}}],
-                       "combinator": "and"}, "options": {}}, pos=(960, 300))
-    send = wa_send(wf, "Send reminder", (1200, 200))
-    f1 = wf.add("Reminded fields", "n8n-nodes-base.code", 2,
-                {"jsCode": "return $('Send reminder?').all().filter(i => i.json.wa).map(i => ({ json: i.json.fields }));"},
-                pos=(1440, 200))
-    f2 = wf.add("Expired fields", "n8n-nodes-base.code", 2,
-                {"jsCode": "return $input.all().map(i => ({ json: i.json.fields }));"}, pos=(1200, 420))
-    upd = wf.add("Update sheet", "n8n-nodes-base.googleSheets", 4.7, sheet_update(), pos=(1680, 300),
+    has_wa = only_if(wf, "WhatsApp reminder?", "$json.wa", (960, 160))
+    send = wa_send(wf, "Send WhatsApp reminder", (1200, 160))
+    has_mail = only_if(wf, "Email reminder?", "$json.email", (960, 320))
+    mail = gmail(wf, "Send email reminder", creds, (1200, 320))
+    fields = wf.add("Sheet fields", "n8n-nodes-base.code", 2,
+                    {"jsCode": "return $input.all().map(i => ({ json: i.json.fields }));"}, pos=(960, 480))
+    upd = wf.add("Update sheet", "n8n-nodes-base.googleSheets", 4.7, sheet_update(), pos=(1200, 480),
                  creds=creds["sheets"], **RETRY)
-    wf.chain(sched, rows, st, plan, has)
-    wf.link(has, send, 0)
-    wf.link(has, f2, 1)
-    wf.chain(send, f1, upd)
-    wf.link(f2, upd)
+    wf.chain(sched, rows, st, plan)
+    for branch in ((has_wa, send), (has_mail, mail), (fields, upd)):
+        wf.link(plan, branch[0])
+        wf.chain(*branch)
     return wf
 
 

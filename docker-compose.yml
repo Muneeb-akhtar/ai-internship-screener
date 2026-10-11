@@ -93,6 +93,8 @@ services:
       WA_TEMPLATE_LANG: ${WA_TEMPLATE_LANG:-en}
       HR_WHATSAPP_NUMBER: ${HR_WHATSAPP_NUMBER:-}
       HR_EMAIL: ${HR_EMAIL:-}
+      # Delivery channels for candidate/HR messages (comma-separated): email, whatsapp
+      NOTIFY_CHANNELS: ${NOTIFY_CHANNELS:-email,whatsapp}
     volumes:
       - n8n_data:/home/node/.n8n
     depends_on:

@@ -2,7 +2,7 @@
   "name": "5 - Process evaluation result",
   "nodes": [
     {
-      "id": "a593226d-3355-426d-8037-f94ba1cf8aed",
+      "id": "bd3690dc-f9c8-4d54-9464-cbd5335932f9",
       "name": "When called by another workflow",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -15,7 +15,7 @@
       }
     },
     {
-      "id": "b4103985-35b0-4c3f-b786-c050a08f837b",
+      "id": "78a2142d-82f6-4ccf-8880-6320533528c7",
       "name": "Plan notifications",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -24,11 +24,11 @@
         300
       ],
       "parameters": {
-        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n\nconst out = [];\nfor (const item of $input.all()) {\n  const { result: r, row, prev_status, error } = item.json;\n  const cid = row.candidate_id, name = row.name, first = firstName(name);\n  const to = waNumber(row.phone), hrTo = waNumber($env.HR_WHATSAPP_NUMBER);\n  const hrEmail = $env.HR_EMAIL, email = row.email;\n  const push = (channel, data) => out.push({ json: { channel, ...data } });\n  const hrAlert = (msg) => hrTo && push('whatsapp', { wa: template(hrTo, 'hr_alert', [msg]) });\n\n  if (error || !r) {  // evaluation failed even after retries\n    push('sheet', { fields: { candidate_id: cid, status: 'Error', updated_at: NOW } });\n    hrAlert(`Evaluation FAILED for ${name} (${cid}): ${error || 'no result'}. Check n8n executions.`);\n    continue;\n  }\n  const s = r.scores;\n  const fields = { candidate_id: cid, status: r.sheet_status, decision: r.final_decision || r.decision,\n    score: s ? `${s.total}/40` : '', ai_summary: s ? s.summary : (r.incomplete_reason || ''),\n    thread_id: r.thread_id, flags: (r.flags || []).join(', '), updated_at: NOW };\n  if (r.interview) { fields.interview_datetime = pkt(r.interview.start); fields.meet_link = r.interview.meet_link || ''; }\n  const m = r.messages || {};\n\n  switch (r.sheet_status) {\n    case 'Scheduled':\n    case 'Shortlisted':\n      push('sheet', { fields });\n      if (to) push('whatsapp', { wa: template(to, 'screening_update', [first, body(m.candidate)]) });\n      if (email) push('email', { to: email, subject: `Interview invitation - ${r.candidate_id ? row.role : ''} internship`, message: m.candidate });\n      hrAlert(m.hr);\n      if (hrEmail) push('email', { to: hrEmail, subject: `[Shortlisted] ${name} - ${row.role}`, message: `${m.hr}\\n\\nThread: ${r.thread_id}` });\n      break;\n    case 'Rejected':\n      push('sheet', { fields });\n      if (to) push('whatsapp', { wa: template(to, 'screening_update', [first, body(m.candidate)]) });\n      if (email) push('email', { to: email, subject: `Your ${row.role} internship application`, message: m.candidate });\n      if (hrEmail) push('email', { to: hrEmail, subject: `[Rejected] ${name} - ${row.role}`, message: `${m.hr}\\n\\nThread: ${r.thread_id}` });\n      break;\n    case 'Human Review':\n      push('sheet', { fields });\n      hrAlert(m.hr);  // contains \"Reply APPROVE <thread> or REJECT <thread>\"\n      if (hrEmail) push('email', { to: hrEmail, subject: `[Decision needed] ${name} - ${row.role}`, message: m.hr });\n      break;\n    case 'Incomplete':\n      if (prev_status !== 'Re-invited') {  // edge case: one new link after a dropped/short call\n        push('reinvite', { candidate_id: cid, name, role: row.role, to });\n      } else {\n        push('sheet', { fields });\n        hrAlert(`${name} (${cid}) did not complete the screening twice (${r.incomplete_reason}). Please follow up personally.`);\n      }\n      break;\n  }\n  if ((r.flags || []).includes('asked_for_human')) hrAlert(`${name} (${cid}) asked to speak with a person during the screening.`);\n}\nreturn out;"
+        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n// Delivery channels (NOTIFY_CHANNELS=email,whatsapp). WhatsApp messages are still attempted\n// when enabled; email makes sure people are reached even if WhatsApp is blocked/unavailable.\nconst CHANNELS = String($env.NOTIFY_CHANNELS || 'email,whatsapp').split(',').map(s => s.trim());\nconst USE_WA = CHANNELS.includes('whatsapp'), USE_EMAIL = CHANNELS.includes('email');\n\nconst out = [];\nfor (const item of $input.all()) {\n  const { result: r, row, prev_status, error } = item.json;\n  const cid = row.candidate_id, name = row.name, first = firstName(name);\n  const to = waNumber(row.phone), hrTo = waNumber($env.HR_WHATSAPP_NUMBER);\n  const hrEmail = $env.HR_EMAIL, email = row.email;\n  const push = (channel, data) => out.push({ json: { channel, ...data } });\n  const hrAlert = (msg, subject) => {\n    if (USE_WA && hrTo) push('whatsapp', { wa: template(hrTo, 'hr_alert', [msg]) });\n    if (USE_EMAIL && hrEmail && subject) push('email', { to: hrEmail, subject, message: msg });\n  };\n\n  if (error || !r) {  // evaluation failed even after retries\n    push('sheet', { fields: { candidate_id: cid, status: 'Error', updated_at: NOW } });\n    hrAlert(`Evaluation FAILED for ${name} (${cid}): ${error || 'no result'}. Check n8n executions.`, `[Error] Evaluation failed - ${name}`);\n    continue;\n  }\n  const s = r.scores;\n  const fields = { candidate_id: cid, status: r.sheet_status, decision: r.final_decision || r.decision,\n    score: s ? `${s.total}/40` : '', ai_summary: s ? s.summary : (r.incomplete_reason || ''),\n    thread_id: r.thread_id, flags: (r.flags || []).join(', '), updated_at: NOW };\n  if (r.interview) { fields.interview_datetime = pkt(r.interview.start); fields.meet_link = r.interview.meet_link || ''; }\n  const m = r.messages || {};\n\n  switch (r.sheet_status) {\n    case 'Scheduled':\n    case 'Shortlisted':\n      push('sheet', { fields });\n      if (USE_WA && to) push('whatsapp', { wa: template(to, 'screening_update', [first, body(m.candidate)]) });\n      if (USE_EMAIL && email) push('email', { to: email, subject: `Interview invitation - ${row.role} internship`, message: m.candidate });\n      hrAlert(m.hr);\n      if (hrEmail) push('email', { to: hrEmail, subject: `[Shortlisted] ${name} - ${row.role}`, message: `${m.hr}\\n\\nThread: ${r.thread_id}` });\n      break;\n    case 'Rejected':\n      push('sheet', { fields });\n      if (USE_WA && to) push('whatsapp', { wa: template(to, 'screening_update', [first, body(m.candidate)]) });\n      if (USE_EMAIL && email) push('email', { to: email, subject: `Your ${row.role} internship application`, message: m.candidate });\n      if (hrEmail) push('email', { to: hrEmail, subject: `[Rejected] ${name} - ${row.role}`, message: `${m.hr}\\n\\nThread: ${r.thread_id}` });\n      break;\n    case 'Human Review':\n      push('sheet', { fields });\n      if (USE_WA && hrTo) push('whatsapp', { wa: template(hrTo, 'hr_alert', [m.hr]) });  // \"Reply APPROVE <thread>...\"\n      if (hrEmail) {  // one-click signed links (POST-confirmed) created by the API\n        const l = r.review_links || {};\n        push('email', { to: hrEmail, subject: `[Decision needed] ${name} - ${row.role}`,\n          message: `Borderline candidate - your decision is needed.\\n\\n${m.hr.replace(/\\n*Reply APPROVE[\\s\\S]*$/, '')}\\n\\nAPPROVE (schedule interview): ${l.approve}\\nREJECT: ${l.reject}\\n\\nThe links expire in 7 days.` });\n      }\n      break;\n    case 'Incomplete':\n      if (prev_status !== 'Re-invited') {  // edge case: one new link after a dropped/short call\n        push('reinvite', { candidate_id: cid, name, role: row.role, to, email });\n      } else {\n        push('sheet', { fields });\n        hrAlert(`${name} (${cid}) did not complete the screening twice (${r.incomplete_reason}). Please follow up personally.`, `[Follow up] ${name} did not complete the screening`);\n      }\n      break;\n  }\n  if ((r.flags || []).includes('asked_for_human')) hrAlert(`${name} (${cid}) asked to speak with a person during the screening.`, `[Follow up] ${name} asked for a person`);\n}\nreturn out;"
       }
     },
     {
-      "id": "af72e3d9-81aa-4240-9c14-5b8a013466a3",
+      "id": "83a742a5-5f60-4414-a11c-a28329397dd5",
       "name": "Route",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
@@ -49,7 +49,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "def9d8e6-a658-481b-8e92-f544bc1758ce",
+                    "id": "b4d3c2ee-c8fb-4da7-8ad6-5f36ad0a3496",
                     "leftValue": "={{ $json.channel }}",
                     "rightValue": "sheet",
                     "operator": {
@@ -73,7 +73,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "0971dcb8-4785-44e9-8c21-b6f75f5724d5",
+                    "id": "4cf28eb6-7671-4447-b1ef-ae3e4d9b16d0",
                     "leftValue": "={{ $json.channel }}",
                     "rightValue": "whatsapp",
                     "operator": {
@@ -97,7 +97,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "bf6caab4-dab0-40e5-8921-3e2a3a3b496a",
+                    "id": "be8e26f8-2b1d-4385-86e7-e4c23cabb92b",
                     "leftValue": "={{ $json.channel }}",
                     "rightValue": "email",
                     "operator": {
@@ -121,7 +121,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "f5010d2d-74df-48b3-a85e-4cab4f2d4ea9",
+                    "id": "1acc1d71-c33c-4f92-bf2f-625dc662804e",
                     "leftValue": "={{ $json.channel }}",
                     "rightValue": "reinvite",
                     "operator": {
@@ -141,7 +141,7 @@
       }
     },
     {
-      "id": "072a3e16-0c77-4d73-bc55-b6e45cc78f51",
+      "id": "e3341291-7479-47bf-993c-8980c1900396",
       "name": "Sheet fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -154,7 +154,7 @@
       }
     },
     {
-      "id": "ecacd248-587e-4483-a837-a5a585d89254",
+      "id": "fa5d4608-1af4-4ee2-906d-b7e4c751ee75",
       "name": "Update sheet",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -340,7 +340,7 @@
       }
     },
     {
-      "id": "2f94fd8c-ec2d-421a-9f44-9ac2026871e7",
+      "id": "f5314a50-7480-46e9-b582-e5fab02e21fb",
       "name": "Send WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -378,7 +378,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "fe430084-ea35-409a-aef5-c3c29d5fb781",
+      "id": "01152685-8d07-45b9-ad6f-8c868cab7b1f",
       "name": "Send email",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
@@ -409,7 +409,7 @@
       }
     },
     {
-      "id": "4da3660f-a8cb-4033-b41e-f1184cb9c48d",
+      "id": "10646e78-7c69-496b-a17a-b46b4d1ed356",
       "name": "New interview link",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -441,7 +441,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "48a64788-ecfb-486c-894c-50d9120edeb5",
+      "id": "46e5e307-4931-48f6-b0ae-9cd80158d628",
       "name": "Re-invite message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -450,18 +450,52 @@
         640
       ],
       "parameters": {
-        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n\nconst src = $('Route').item.json;\nreturn { json: {\n  wa: template(src.to, 'screening_update', [firstName(src.name),\n    `your screening call ended early, no problem. Here is a new link to try again: ${$json.url}`]),\n  fields: { candidate_id: src.candidate_id, status: 'Re-invited', interview_link: $json.url, updated_at: NOW },\n} };",
+        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n// Delivery channels (NOTIFY_CHANNELS=email,whatsapp). WhatsApp messages are still attempted\n// when enabled; email makes sure people are reached even if WhatsApp is blocked/unavailable.\nconst CHANNELS = String($env.NOTIFY_CHANNELS || 'email,whatsapp').split(',').map(s => s.trim());\nconst USE_WA = CHANNELS.includes('whatsapp'), USE_EMAIL = CHANNELS.includes('email');\n\nconst src = $('Route').item.json;\nconst note = `your screening call ended early, no problem. Here is a new link to try again: ${$json.url}`;\nreturn { json: {\n  wa: USE_WA && src.to ? template(src.to, 'screening_update', [firstName(src.name), note]) : null,\n  email: USE_EMAIL && src.email ? { to: src.email, subject: `New link for your ${src.role} screening interview`,\n    message: `Hi ${firstName(src.name)},\\n\\n${note.charAt(0).toUpperCase() + note.slice(1)}\\n\\nThe Hiring Team` } : null,\n  fields: { candidate_id: src.candidate_id, status: 'Re-invited', interview_link: $json.url, updated_at: NOW },\n} };",
         "mode": "runOnceForEachItem"
       }
     },
     {
-      "id": "9976dfe1-86c8-43db-a884-c0b99e96d8b7",
+      "id": "fd26c3e6-4bd6-48f6-a8c1-51a08bb206ad",
+      "name": "WhatsApp re-invite?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        560
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bdf98ba8-c7a5-47e8-ae85-bfbfabc3d2aa",
+              "leftValue": "={{ !!($json.wa) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "03f541f4-06aa-4b5a-953e-0573a65d7681",
       "name": "Send re-invite",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1200,
-        640
+        1440,
+        560
       ],
       "parameters": {
         "method": "POST",
@@ -493,26 +527,91 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "bca47670-0868-4454-8d1f-490a8941c14b",
+      "id": "f55c8232-c8d1-48b1-a8b3-b188b788c63b",
+      "name": "Email re-invite?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        720
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "81cf77c9-5935-4da3-9a64-6d9a4e21d9e3",
+              "leftValue": "={{ !!($json.email) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "79e30d0e-74e9-4167-9e48-db8718a8756d",
+      "name": "Email re-invite",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1440,
+        720
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.email.to }}",
+        "subject": "={{ $json.email.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.email.message }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CREDENTIAL_ID",
+          "name": "Gmail (screener)"
+        }
+      }
+    },
+    {
+      "id": "858d9e69-d7a5-4cd9-a88c-9d98c94c419c",
       "name": "Re-invite sheet fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1440,
-        640
+        1200,
+        880
       ],
       "parameters": {
-        "jsCode": "return $('Re-invite message').all().map(i => ({ json: i.json.fields }));"
+        "jsCode": "return $input.all().map(i => ({ json: i.json.fields }));"
       }
     },
     {
-      "id": "a00a7f31-d978-47f5-9f4d-ccc5a85a795f",
+      "id": "ecb1ae74-99ea-4304-9cef-64cadd0822d8",
       "name": "Update sheet (re-invited)",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1680,
-        640
+        1440,
+        880
       ],
       "parameters": {
         "operation": "update",
@@ -773,6 +872,27 @@
       "main": [
         [
           {
+            "node": "WhatsApp re-invite?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email re-invite?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Re-invite sheet fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp re-invite?": {
+      "main": [
+        [
+          {
             "node": "Send re-invite",
             "type": "main",
             "index": 0
@@ -780,11 +900,11 @@
         ]
       ]
     },
-    "Send re-invite": {
+    "Email re-invite?": {
       "main": [
         [
           {
-            "node": "Re-invite sheet fields",
+            "node": "Email re-invite",
             "type": "main",
             "index": 0
           }

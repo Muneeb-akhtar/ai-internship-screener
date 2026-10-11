@@ -2,7 +2,7 @@
   "name": "2 - Vapi end-of-call -> evaluate",
   "nodes": [
     {
-      "id": "1a2cdec7-ba47-48ad-9f20-873b398d7b7d",
+      "id": "3d7b32d4-8fa2-4482-a587-3d676a5bc04a",
       "name": "Vapi end-of-call webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -19,7 +19,7 @@
       "webhookId": "2d2c3525-739c-5bbe-a36e-15d84f23b445"
     },
     {
-      "id": "0116b681-a0fc-409b-9cbd-a5d4e2f8e72c",
+      "id": "5d4dd8c8-853b-4828-892c-b2b62c99ef28",
       "name": "Verify & parse",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -28,12 +28,12 @@
         300
       ],
       "parameters": {
-        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n\nconst h = $json.headers || {};\nconst msg = ($json.body || {}).message || {};\nconst call = msg.call || {};\nconst meta = (call.assistantOverrides || {}).metadata || {};\nconst started = msg.startedAt || call.startedAt, ended = msg.endedAt || call.endedAt;\nreturn { json: {\n  authorized: !!$env.VAPI_WEBHOOK_SECRET && h['x-vapi-secret'] === $env.VAPI_WEBHOOK_SECRET,\n  relevant: msg.type === 'end-of-call-report' && !!meta.candidate_id,\n  candidate_id: meta.candidate_id, interview_token: meta.interview_token, call_id: call.id,\n  duration: started && ended ? (Date.parse(ended) - Date.parse(started)) / 1000 : null,\n  transcript: (msg.artifact || {}).transcript || msg.transcript || '',\n  call_time: started ? pkt(started) : '', ended_reason: msg.endedReason,\n} };",
+        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n// Delivery channels (NOTIFY_CHANNELS=email,whatsapp). WhatsApp messages are still attempted\n// when enabled; email makes sure people are reached even if WhatsApp is blocked/unavailable.\nconst CHANNELS = String($env.NOTIFY_CHANNELS || 'email,whatsapp').split(',').map(s => s.trim());\nconst USE_WA = CHANNELS.includes('whatsapp'), USE_EMAIL = CHANNELS.includes('email');\n\nconst h = $json.headers || {};\nconst msg = ($json.body || {}).message || {};\nconst call = msg.call || {};\nconst meta = (call.assistantOverrides || {}).metadata || {};\nconst started = msg.startedAt || call.startedAt, ended = msg.endedAt || call.endedAt;\nreturn { json: {\n  authorized: !!$env.VAPI_WEBHOOK_SECRET && h['x-vapi-secret'] === $env.VAPI_WEBHOOK_SECRET,\n  relevant: msg.type === 'end-of-call-report' && !!meta.candidate_id,\n  candidate_id: meta.candidate_id, interview_token: meta.interview_token, call_id: call.id,\n  duration: started && ended ? (Date.parse(ended) - Date.parse(started)) / 1000 : null,\n  transcript: (msg.artifact || {}).transcript || msg.transcript || '',\n  call_time: started ? pkt(started) : '', ended_reason: msg.endedReason,\n} };",
         "mode": "runOnceForEachItem"
       }
     },
     {
-      "id": "c90a66c2-8418-4605-b477-8d302a0749db",
+      "id": "dd6033fb-b404-4c01-80b7-0bb755b9222b",
       "name": "Authorized?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -51,7 +51,7 @@
           },
           "conditions": [
             {
-              "id": "7a8d15d1-6839-4949-8596-d104c3ea51ce",
+              "id": "00160dbf-c079-4fd6-9df5-8984a243d8a2",
               "leftValue": "={{ $json.authorized }}",
               "rightValue": "",
               "operator": {
@@ -67,7 +67,7 @@
       }
     },
     {
-      "id": "9bc45ee5-dce2-4970-bfbc-aad13898509a",
+      "id": "be085d37-cd01-48f0-912f-1ebd9d87eb75",
       "name": "200 OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -84,7 +84,7 @@
       }
     },
     {
-      "id": "054aa35b-fa4a-4eb0-b16a-de8a9829653c",
+      "id": "f2666376-80d1-44f3-bcdf-9e520bcb8778",
       "name": "401 Unauthorized",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -101,7 +101,7 @@
       }
     },
     {
-      "id": "0112ad41-64bb-4fb7-b42a-26c9228a4f25",
+      "id": "3f31f8e7-041f-4b0b-804c-68458f0d5dd7",
       "name": "End-of-call report?",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
@@ -119,7 +119,7 @@
           },
           "conditions": [
             {
-              "id": "b81545b0-c6fc-436f-a935-906babd1ddfb",
+              "id": "ff829f58-1b99-4f6e-9b0f-bf0361b7008c",
               "leftValue": "={{ $('Verify & parse').item.json.relevant }}",
               "rightValue": "",
               "operator": {
@@ -135,7 +135,7 @@
       }
     },
     {
-      "id": "bc5c204d-b433-4c98-b47d-f1bf867d5723",
+      "id": "a6468f6f-4ac5-4870-9137-6d401cbfddd0",
       "name": "Find candidate",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -176,7 +176,7 @@
       }
     },
     {
-      "id": "a2b4b4b4-d68a-4185-b31a-af1222c17032",
+      "id": "83bae1cc-c631-4136-9b1c-c42f5de4908f",
       "name": "Build evaluate request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -185,12 +185,12 @@
         200
       ],
       "parameters": {
-        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n\nconst p = $('Verify & parse').item.json, row = $json;\nreturn { json: { row, prev_status: row.status,\n  sheet: { candidate_id: String(row.candidate_id), status: 'Called', call_time: p.call_time, updated_at: NOW },\n  request: { candidate_id: String(row.candidate_id), candidate_name: row.name, candidate_email: row.email || null,\n    role: row.role, transcript: p.transcript || '(empty)', call_id: p.call_id,\n    call_duration_seconds: p.duration, interview_token: p.interview_token },\n} };",
+        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n// Delivery channels (NOTIFY_CHANNELS=email,whatsapp). WhatsApp messages are still attempted\n// when enabled; email makes sure people are reached even if WhatsApp is blocked/unavailable.\nconst CHANNELS = String($env.NOTIFY_CHANNELS || 'email,whatsapp').split(',').map(s => s.trim());\nconst USE_WA = CHANNELS.includes('whatsapp'), USE_EMAIL = CHANNELS.includes('email');\n\nconst p = $('Verify & parse').item.json, row = $json;\nreturn { json: { row, prev_status: row.status,\n  sheet: { candidate_id: String(row.candidate_id), status: 'Called', call_time: p.call_time, updated_at: NOW },\n  request: { candidate_id: String(row.candidate_id), candidate_name: row.name, candidate_email: row.email || null,\n    role: row.role, transcript: p.transcript || '(empty)', call_id: p.call_id,\n    call_duration_seconds: p.duration, interview_token: p.interview_token },\n} };",
         "mode": "runOnceForEachItem"
       }
     },
     {
-      "id": "67d141e6-5765-4b24-a496-59a03c9244f5",
+      "id": "6f53b498-1c85-478a-8fa1-9df8f195aa83",
       "name": "Mark called",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -203,7 +203,7 @@
       }
     },
     {
-      "id": "7dd89f69-c762-4391-9914-1e360b3e307c",
+      "id": "d98492fb-6731-46c6-a168-15cfcde68db7",
       "name": "Update sheet",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -389,7 +389,7 @@
       }
     },
     {
-      "id": "9f4aa64c-8e5b-4bcf-84e7-fd58b81534d9",
+      "id": "9b81e718-39af-4845-a645-dda06ef2d35b",
       "name": "Evaluate",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -427,7 +427,7 @@
       "waitBetweenTries": 10000
     },
     {
-      "id": "8ff9562f-9fb6-4b84-927a-204742ceab1c",
+      "id": "8fbf8a13-5061-4349-a944-97fec5de3cfa",
       "name": "Package result",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -436,12 +436,12 @@
         300
       ],
       "parameters": {
-        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n\nconst b = $('Build evaluate request').item.json;\nconst ok = $json.statusCode === 200;\nreturn { json: { row: b.row, prev_status: b.prev_status, result: ok ? $json.body : null,\n  error: ok ? null : `HTTP ${$json.statusCode}: ${clean(JSON.stringify($json.body), 300)}` } };",
+        "jsCode": "\nconst API = $env.SCREENER_API_URL;\n// WhatsApp wants digits only, with country code: 0300... -> 92300...\nfunction waNumber(p) {\n  let d = String(p || '').replace(/\\D/g, '');\n  if (d.startsWith('00')) d = d.slice(2);\n  if (d.startsWith('0') && d.length === 11) d = '92' + d.slice(1);\n  return d;\n}\n// Template parameters can't contain newlines/tabs or 4+ spaces, and have length limits\nfunction clean(t, max = 900) {\n  return String(t || '').replace(/[\\r\\n\\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, max);\n}\n// Our drafted messages already greet/sign; the templates add their own greeting/signature\nfunction body(t) {\n  return clean(String(t || '')\n    .replace(/^\\s*(hi|hello|dear)\\s+[^,!\\n]*[,!]\\s*/i, '')\n    .replace(/[-–—]?\\s*(warm(ly)?|best( wishes)?|regards|wishing you[^,\\n]*)?[,\\s]*the hiring team\\.?\\s*$/i, ''));\n}\nfunction template(to, name, params) {\n  return { messaging_product: 'whatsapp', to, type: 'template',\n    template: { name, language: { code: $env.WA_TEMPLATE_LANG || 'en' },\n      components: [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: clean(p) || '-' })) }] } };\n}\nfunction text(to, msg) {\n  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(msg).slice(0, 4000) } };\n}\nfunction firstName(n) { return String(n || 'there').trim().split(/\\s+/)[0]; }\nfunction pkt(iso) {\n  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric',\n    month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' PKT';\n}\nconst NOW = new Date().toISOString();\n// Delivery channels (NOTIFY_CHANNELS=email,whatsapp). WhatsApp messages are still attempted\n// when enabled; email makes sure people are reached even if WhatsApp is blocked/unavailable.\nconst CHANNELS = String($env.NOTIFY_CHANNELS || 'email,whatsapp').split(',').map(s => s.trim());\nconst USE_WA = CHANNELS.includes('whatsapp'), USE_EMAIL = CHANNELS.includes('email');\n\nconst b = $('Build evaluate request').item.json;\nconst ok = $json.statusCode === 200;\nreturn { json: { row: b.row, prev_status: b.prev_status, result: ok ? $json.body : null,\n  error: ok ? null : `HTTP ${$json.statusCode}: ${clean(JSON.stringify($json.body), 300)}` } };",
         "mode": "runOnceForEachItem"
       }
     },
     {
-      "id": "4414dbbd-9690-41e1-88fc-5bf947d963fb",
+      "id": "15453240-f401-4c3a-9915-1ddd6a1b671f",
       "name": "Process result",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,

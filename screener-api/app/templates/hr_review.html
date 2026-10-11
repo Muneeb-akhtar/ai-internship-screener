@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{{ title }}</title>
+  <style>
+    :root { --bg: #f5f6fa; --card: #fff; --text: #1d2130; --muted: #5d6475; --line: #e3e6ee; --accent: #3b5bdb; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #12141b; --card: #1c1f2a; --text: #e9ebf2; --muted: #a2a8b8; --line: #2e3242; --accent: #748ffc; }
+    }
+    body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+    main { max-width: 520px; margin: 0 auto; padding: 48px 16px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
+    h1 { font-size: 22px; margin: 0 0 8px; }
+    p { color: var(--muted); margin: 0 0 20px; }
+    button { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 14px; width: 100%;
+             background: var(--accent); color: #fff; cursor: pointer; }
+  </style>
+</head>
+<body>
+<main><div class="card">
+  <h1>{{ title }}</h1>
+  <p>{{ text }}</p>
+  {% if form %}
+  <!-- POST: only a deliberate click records the decision (link scanners only GET) -->
+  <form method="post" action="?decision={{ form.decision }}&exp={{ form.exp }}&sig={{ form.sig }}">
+    <button type="submit">{{ form.label }}</button>
+  </form>
+  {% endif %}
+</div></main>
+</body>
+</html>
