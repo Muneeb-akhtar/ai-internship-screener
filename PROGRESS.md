@@ -11,7 +11,7 @@ Running record of the build so any new session (human or AI) can pick up where w
 | 3. Vapi interview page + assistant prompt | ✅ **Done.** Real browser interview → transcript → agent decision verified (2026-10-11) |
 | 4. Google Calendar tool | ✅ **Done.** Real free/busy + events with Meet links in hr-account's calendar (2026-10-11) |
 | 5. n8n workflows + Meta WhatsApp Cloud API | 🟡 n8n flows live (email channel). **WhatsApp dropped by owner (2026-10-12)**: Meta blocks the new account (no card + no business verification). WhatsApp/ElevenLabs code kept, switched off |
-| 6. AWS EC2 deployment | Not started (set an AWS Budget alert first) |
+| 6. AWS EC2 deployment | 🟡 Deploy kit built + verified locally (2026-10-12). ⏳ Needs the owner's AWS account (card at sign-up) → follow deploy/README.md |
 | 7. CI/CD + README polish | Not started |
 
 ## Log
@@ -167,9 +167,20 @@ Running record of the build so any new session (human or AI) can pick up where w
 - **Owner decision 2026-10-12: leave WhatsApp.** `.env`: `NOTIFY_CHANNELS=email`, `VOICE_PROVIDER=vapi`. All code stays (switchable).
 - Free Cloudflare quick tunnels die every few hours → links in older emails break. Real fix: Phase 6 (own domain).
 
+### 2026-10-12: Phase 6 deploy kit
+- `docker-compose.prod.yml`: Caddy (prod profile) is the only public entry. The n8n editor binds to the server's 127.0.0.1:5678
+  (SSH tunnel), `N8N_EDITOR_BASE_URL=http://localhost:5678/` so Google OAuth works through the tunnel, memory limits for t3.small.
+- `Caddyfile` (prod): the same allow-list as dev + HSTS/nosniff headers. Caddy pinned to 2.11.7.
+- `deploy/setup-ec2.sh` (Docker official repo, 2 GB swap, UFW 22/80/443, unattended-upgrades, AWS CLI, Asia/Karachi),
+  `backup.sh` (pg_dump both DBs → S3 via IAM role, 7 local copies, S3 lifecycle 14 days), `restore.sh`,
+  `export-local.ps1` (git archive + DB dumps + secrets + `.env.server` with production overrides), `deploy/README.md` (12 steps).
+- Verified: prod compose config, `caddy validate`, ShellCheck (info-only), and a real dump → restore round trip into a fresh Postgres
+  (6 workflows, 2 credentials, 11 evaluations, 9 links, 77 checkpoints, correct owners). Scripts are LF in git and on disk.
+- Important: stop the local stack before the server starts (both would poll the same Sheet → double invites).
+
 ### Next steps
 1. Owner runs the end-to-end demo from the invite email (browser interview).
-2. Phase 6: AWS + domain (stable URLs).
+2. Owner: AWS account + Budget alert, then follow deploy/README.md (I can run the server-side steps over SSH).
 3. Owner decision: should near-threshold rejects (e.g. 17–19) or any skipped question go to human review?
 2. Owner: rotate the Vapi private key (it was shared in chat).
 3. Owner: publish the OAuth app (avoid the 7-day token expiry); delete the 2 TEST events if wanted.
