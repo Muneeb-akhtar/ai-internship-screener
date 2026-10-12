@@ -10,7 +10,7 @@ Running record of the build so any new session (human or AI) can pick up where w
 | 2. LangGraph agent | ✅ **Built + verified** with real Gemini and Postgres (2026-10-10). ⏳ Owner to test |
 | 3. Vapi interview page + assistant prompt | ✅ **Done.** Real browser interview → transcript → agent decision verified (2026-10-11) |
 | 4. Google Calendar tool | ✅ **Done.** Real free/busy + events with Meet links in hr-account's calendar (2026-10-11) |
-| 5. n8n workflows + Meta WhatsApp Cloud API | Not started |
+| 5. n8n workflows + Meta WhatsApp Cloud API | 🟡 n8n flows live (email channel). **WhatsApp dropped by owner (2026-10-12)**: Meta blocks the new account (no card + no business verification). WhatsApp/ElevenLabs code kept, switched off |
 | 6. AWS EC2 deployment | Not started (set an AWS Budget alert first) |
 | 7. CI/CD + README polish | Not started |
 
@@ -157,8 +157,20 @@ Running record of the build so any new session (human or AI) can pick up where w
 - Waiting on the owner: n8n owner account + N8N_API_KEY, the Meta app (test number, verified recipient), Google Sheet + Sheets/Gmail
   APIs enabled, then connecting the n8n Google credentials.
 
+### 2026-10-11/12: WhatsApp blocked → email channel; ElevenLabs built; WhatsApp dropped
+- The Meta app, permanent System User token, webhook (signature-verified, inbound "hi" received → n8n replied) and templates
+  were all created. But WABA health = `can_send_message: BLOCKED`: 141006 (no payment method) + 141010 (business not verified).
+  Error 131031 on delivery. Meta APIs can't fix these for a non-partner app; only the owner can add a card and verify.
+- Added an **email channel** (`NOTIFY_CHANNELS`) + **one-click signed HR Approve/Reject links** (`/hr/review/...`, GET = confirm
+  page, POST = decide). Built the **ElevenLabs WhatsApp calling** integration (`VOICE_PROVIDER=elevenlabs`, `/voice/whatsapp-call`,
+  `/elevenlabs/post-call` with the SDK-identical signature check), but it needs the same Meta account → blocked.
+- **Owner decision 2026-10-12: leave WhatsApp.** `.env`: `NOTIFY_CHANNELS=email`, `VOICE_PROVIDER=vapi`. All code stays (switchable).
+- Free Cloudflare quick tunnels die every few hours → links in older emails break. Real fix: Phase 6 (own domain).
+
 ### Next steps
-1. Owner decision: should near-threshold rejects (e.g. 17–19) or any skipped question go to human review?
+1. Owner runs the end-to-end demo from the invite email (browser interview).
+2. Phase 6: AWS + domain (stable URLs).
+3. Owner decision: should near-threshold rejects (e.g. 17–19) or any skipped question go to human review?
 2. Owner: rotate the Vapi private key (it was shared in chat).
 3. Owner: publish the OAuth app (avoid the 7-day token expiry); delete the 2 TEST events if wanted.
 4. Phase 5: n8n workflows + Meta WhatsApp Cloud API + public tunnel.
