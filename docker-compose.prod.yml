@@ -1,0 +1,46 @@
+# =============================================================================
+# Production overrides (AWS EC2). Used together with the base file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile prod up -d --build
+#
+# Public internet -> Caddy (80/443, automatic HTTPS for $DOMAIN) -> only the routes in
+# Caddyfile. Everything else stays inside the Docker network.
+# The n8n EDITOR is not public: it listens on the server's 127.0.0.1:5678 only, and you
+# reach it from your PC through an SSH tunnel:
+#   ssh -i screener-key.pem -L 5678:localhost:5678 ubuntu@<server>   ->  http://localhost:5678
+# =============================================================================
+services:
+  postgres:
+    # Small instance (2 GB RAM): keep Postgres modest
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "max_connections=50"]
+
+  n8n:
+    ports:
+      - "127.0.0.1:5678:5678" # SSH-tunnel access only (never 0.0.0.0)
+    environment:
+      N8N_HOST: ${DOMAIN:?Set DOMAIN in .env}
+      # Webhooks are public via Caddy (https://DOMAIN/webhook/...)
+      WEBHOOK_URL: https://${DOMAIN}/
+      # The editor + Google OAuth callbacks run through the SSH tunnel on localhost
+      N8N_EDITOR_BASE_URL: http://localhost:5678/
+      N8N_SECURE_COOKIE: "false" # the tunnel is plain http on your own PC
+      N8N_PROXY_HOPS: 1 # trust X-Forwarded-* from Caddy
+    deploy:
+      resources:
+        limits:
+          memory: 900M
+
+  screener-api:
+    environment:
+      APP_ENV: prod # JSON logs
+      PUBLIC_BASE_URL: https://${DOMAIN}
+    deploy:
+      resources:
+        limits:
+          memory: 700M
+
+  caddy:
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config

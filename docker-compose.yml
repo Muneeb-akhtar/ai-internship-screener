@@ -182,7 +182,7 @@ services:
   # Caddy: HTTPS reverse proxy. Only runs with `--profile prod` (Phase 6).
   # ---------------------------------------------------------------------------
   caddy:
-    image: caddy:2-alpine
+    image: caddy:2.11.7-alpine
     profiles: ["prod"]
     restart: unless-stopped
     ports:

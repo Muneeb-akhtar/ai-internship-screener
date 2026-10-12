@@ -1,7 +1,9 @@
-# Caddy reverse proxy with automatic HTTPS (Let's Encrypt).
-# Only started with `docker compose --profile prod up -d`. Completed in Phase 6.
+# Production reverse proxy with automatic HTTPS (Let's Encrypt).
+# Started by: docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile prod up -d
+# {$DOMAIN} and {$ACME_EMAIL} come from .env via docker-compose.yml.
 #
-# {$DOMAIN} and {$ACME_EMAIL} come from environment variables set in docker-compose.yml.
+# Same rule as the dev router (Caddyfile.dev): ONLY routes that must be reachable from the
+# internet are forwarded. n8n's editor, /evaluate, /review and /docs are never exposed.
 {
 	email {$ACME_EMAIL}
 }
@@ -9,16 +11,26 @@
 {$DOMAIN} {
 	encode zstd gzip
 
-	# Candidate interview pages + agent API
-	handle /interview/* {
-		reverse_proxy screener-api:8000
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
 	}
-	handle /health {
+
+	# Candidate interview pages, HR recording + decision links, provider webhooks, health
+	@api path /interview/* /recordings/* /hr/review/* /whatsapp/webhook /elevenlabs/post-call /health
+	handle @api {
 		reverse_proxy screener-api:8000
 	}
 
-	# Everything else -> n8n (editor UI + webhooks)
-	handle {
+	# The only n8n webhook called from outside (Vapi end-of-call report)
+	@n8n path /webhook/vapi-end-of-call
+	handle @n8n {
 		reverse_proxy n8n:5678
+	}
+
+	handle {
+		respond "Not found" 404
 	}
 }

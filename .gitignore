@@ -30,3 +30,6 @@ Thumbs.db
 *.dump
 *.sql.gz
 backups/
+
+# Deployment bundle (contains secrets + DB dumps)
+deploy/bundle/
