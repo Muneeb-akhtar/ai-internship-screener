@@ -17,8 +17,11 @@ strong candidates and asks HR to decide borderline ones with one click.
 🎥 **Demo video:** _coming soon_ · 🌐 **Live deployment:** `https://muneeb-screener.duckdns.org` (private routes only, see [Security](#security))
 
 <p align="center">
-  <img src="docs/images/interview-page-desktop.png" alt="Candidate interview page" width="560">
+  <img src="docs/images/interview-page-desktop.png" alt="Candidate interview page (desktop)" width="560">
+  &nbsp;
+  <img src="docs/images/interview-page-mobile.png" alt="Candidate interview page (mobile)" width="210">
 </p>
+<p align="center"><i>The candidate's interview page (live deployment): AI disclosure, consent notice and mic check before the voice call.</i></p>
 
 ---
 

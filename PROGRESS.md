@@ -12,7 +12,7 @@ Running record of the build so any new session (human or AI) can pick up where w
 | 4. Google Calendar tool | ✅ **Done.** Real free/busy + events with Meet links in hr-account's calendar (2026-10-11) |
 | 5. n8n workflows + Meta WhatsApp Cloud API | 🟡 n8n flows live (email channel). **WhatsApp dropped by owner (2026-10-12)**: Meta blocks the new account (no card + no business verification). WhatsApp/ElevenLabs code kept, switched off |
 | 6. AWS EC2 deployment | ✅ **Live (2026-10-13):** https://muneeb-screener.duckdns.org (EC2 t3.small, Mumbai, HTTPS, nightly S3 backups) |
-| 7. CI/CD + README polish | Not started |
+| 7. CI/CD + README polish | ✅ **Public repo** https://github.com/Muneeb-akhtar/ai-internship-screener, CI green, GitOps auto-deploy (2026-10-13). ⏳ Owner records the demo video |
 
 ## Log
 ### 2026-10-09: environment setup + Phase 1
@@ -193,10 +193,21 @@ Running record of the build so any new session (human or AI) can pick up where w
   backup.sh/restore.sh now read only the needed keys via `env_get`.
 - If SSH stops working, the home IP probably changed → edit the SSH rule in `screener-sg` to "My IP".
 
+### 2026-10-13: Phase 7, public repo + CI/CD
+- Before publishing: scanned ALL git history. No keys/tokens were ever committed. Personal data (emails, phone, home IP,
+  AWS/GCP/Meta ids) was scrubbed from every commit with `git filter-repo --replace-text` (backup bundle kept locally).
+- `.github/workflows/ci.yml`: ruff + pytest (mocked LLM), Docker image build, compose dev/prod validation, Caddyfile
+  validation, shellcheck, n8n-export freshness (made the generator deterministic: node ids from uuid5). Linted with actionlint.
+- Deployment is **pull-based**: `deploy/auto-deploy.sh` (cron */5 on the server) deploys `origin/main` only when ALL GitHub
+  check runs for that SHA succeeded, health-checks `https://DOMAIN/health`, rolls back on failure and remembers the bad SHA.
+  No AWS keys in GitHub, SSH stays restricted. Deviation from the brief (ECR + SSH push): chosen for security and zero setup.
+- README (diagrams, screenshots, highlights, security), `docs/DEMO.md` (video script + free recording tools), `docs/PORTFOLIO.md`
+  (resume bullets + LinkedIn post), MIT license. Candidate-facing text says email instead of WhatsApp.
+
 ### Next steps
-1. Owner: end-to-end demo on the live server (add a candidate row as `New`).
-2. Owner: Budget alert (skipped so far) + optionally regenerate the DuckDNS token (shown in a screenshot).
-3. Phase 7: GitHub repo (ask public/private), CI/CD, README, demo script, resume bullet.
+1. Owner records the 2–3 min demo video (docs/DEMO.md), uploads it unlisted → put the link in README.
+2. Owner: Budget alert + optionally regenerate the DuckDNS token.
+3. Open decision: near-threshold rejects → human review?
 3. Owner decision: should near-threshold rejects (e.g. 17–19) or any skipped question go to human review?
 2. Owner: rotate the Vapi private key (it was shared in chat).
 3. Owner: publish the OAuth app (avoid the 7-day token expiry); delete the 2 TEST events if wanted.
