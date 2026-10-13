@@ -10,8 +10,13 @@ set -euo pipefail
 
 APP_DIR=/opt/screener
 cd "$APP_DIR"
-# shellcheck disable=SC1091
-set -a; source .env; set +a
+# Read only the values we need. (Don't `source .env`: values with spaces, like
+# COMPANY_NAME=Our Company, are valid for Docker Compose but break bash.)
+env_get() { grep -E "^$1=" .env | tail -1 | cut -d= -f2- | tr -d '\r'; }
+POSTGRES_USER=$(env_get POSTGRES_USER)
+N8N_DB_NAME=$(env_get N8N_DB_NAME)
+SCREENER_DB_NAME=$(env_get SCREENER_DB_NAME)
+BACKUP_S3_BUCKET=$(env_get BACKUP_S3_BUCKET)
 
 STAMP=$(date +%Y-%m-%d_%H%M)
 OUT="$APP_DIR/backups"

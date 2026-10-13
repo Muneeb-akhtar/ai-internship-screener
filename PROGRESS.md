@@ -11,7 +11,7 @@ Running record of the build so any new session (human or AI) can pick up where w
 | 3. Vapi interview page + assistant prompt | ✅ **Done.** Real browser interview → transcript → agent decision verified (2026-10-11) |
 | 4. Google Calendar tool | ✅ **Done.** Real free/busy + events with Meet links in hr-account's calendar (2026-10-11) |
 | 5. n8n workflows + Meta WhatsApp Cloud API | 🟡 n8n flows live (email channel). **WhatsApp dropped by owner (2026-10-12)**: Meta blocks the new account (no card + no business verification). WhatsApp/ElevenLabs code kept, switched off |
-| 6. AWS EC2 deployment | 🟡 Deploy kit built + verified locally (2026-10-12). ⏳ Needs the owner's AWS account (card at sign-up) → follow deploy/README.md |
+| 6. AWS EC2 deployment | ✅ **Live (2026-10-13):** https://muneeb-screener.duckdns.org (EC2 t3.small, Mumbai, HTTPS, nightly S3 backups) |
 | 7. CI/CD + README polish | Not started |
 
 ## Log
@@ -178,9 +178,25 @@ Running record of the build so any new session (human or AI) can pick up where w
   (6 workflows, 2 credentials, 11 evaluations, 9 links, 77 checkpoints, correct owners). Scripts are LF in git and on disk.
 - Important: stop the local stack before the server starts (both would poll the same Sheet → double invites).
 
+### 2026-10-13: Phase 6 deployed
+- AWS account <aws-account-id> (free plan, $120 credits until 2027-01-25), root MFA (an authenticator app; the first QR secret was
+  exposed in a screenshot → the owner re-did MFA with a new key). Region ap-south-1 (Mumbai).
+- Resources: key pair `screener-key` (RSA, `~/.ssh/screener-key.pem`), S3 `screener-backups-muneeb` (private, lifecycle 30 days),
+  IAM role `screener-ec2-role` + inline `backup-upload-only` (s3:PutObject on postgres/* only, verified: upload OK, list denied),
+  SG `screener-sg` (22 from <your-home-ip>/32, 80/443 anywhere), EC2 `i-0acc359e579884299` t3.small Ubuntu 24.04 30 GiB gp3,
+  Elastic IP **16.4.82.248**, DuckDNS **muneeb-screener.duckdns.org**.
+- Migration: local n8n stopped (no double polling of the Sheet) → bundle (git archive + pg_dump + secrets + .env.server) →
+  restore → stack up. Let's Encrypt cert issued by Caddy. 6 active workflows, 11 evaluations, Google Calendar scheduler and
+  Gemini all OK on the server. Vapi webhook → https://muneeb-screener.duckdns.org/webhook/vapi-end-of-call (unsigned → 401).
+  First backup is in S3; cron at 02:00 PKT.
+- Fixes found while deploying: `.env` copied from Windows had CRLF; `source .env` breaks on values with spaces →
+  backup.sh/restore.sh now read only the needed keys via `env_get`.
+- If SSH stops working, the home IP probably changed → edit the SSH rule in `screener-sg` to "My IP".
+
 ### Next steps
-1. Owner runs the end-to-end demo from the invite email (browser interview).
-2. Owner: AWS account + Budget alert, then follow deploy/README.md (I can run the server-side steps over SSH).
+1. Owner: end-to-end demo on the live server (add a candidate row as `New`).
+2. Owner: Budget alert (skipped so far) + optionally regenerate the DuckDNS token (shown in a screenshot).
+3. Phase 7: GitHub repo (ask public/private), CI/CD, README, demo script, resume bullet.
 3. Owner decision: should near-threshold rejects (e.g. 17–19) or any skipped question go to human review?
 2. Owner: rotate the Vapi private key (it was shared in chat).
 3. Owner: publish the OAuth app (avoid the 7-day token expiry); delete the 2 TEST events if wanted.
