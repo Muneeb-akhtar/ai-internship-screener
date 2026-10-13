@@ -104,7 +104,7 @@ def score_messages(
 # ---------------------------------------------------------------------------
 # reject  (LLM drafts a kind message; facts like scores are never included)
 # ---------------------------------------------------------------------------
-REJECTION_SYSTEM = """Write a short, warm WhatsApp message (max 90 words) to an internship candidate
+REJECTION_SYSTEM = """Write a short, warm message (max 90 words) to an internship candidate
 who was not selected after a screening interview. Be polite, encouraging and specific about one
 genuine strength if there is one. Do not mention scores, AI evaluation details or reasons that could
 feel hurtful. Encourage them to apply again in the future. Sign off as "The Hiring Team".

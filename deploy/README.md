@@ -143,7 +143,7 @@ chmod +x /opt/screener/deploy/backup.sh
 | Status | `docker compose -f docker-compose.yml -f docker-compose.prod.yml ps` |
 | Logs | `… logs -f screener-api` |
 | Restart | `… --profile prod restart` |
-| Update code | new bundle → `tar -xzf` → `… --profile prod up -d --build` (Phase 7 automates this) |
+| Update code | Automatic: `git push` to `main` → CI passes → the server deploys within 5 min (`deploy/auto-deploy.sh`, log in `backups/deploy.log`) |
 
 **Pause to save money:** EC2 → select the instance → **Instance state → Stop**. Start it again
 later: the Elastic IP and domain stay the same, and Docker starts everything automatically.

@@ -98,10 +98,10 @@
   <!-- Step 3: done -->
   <section class="card" id="done" hidden>
     <h1>Thank you, {{ name }}!</h1>
-    <p class="sub" id="done-text">Your interview is complete. Our HR team will contact you on WhatsApp soon.</p>
+    <p class="sub" id="done-text">Your interview is complete. Our HR team will contact you by email soon.</p>
   </section>
 
-  <footer>Having trouble? Reply to our WhatsApp message and we'll help.</footer>
+  <footer>Having trouble? Reply to your invitation email and we'll help.</footer>
 </main>
 
 <!-- Page config rendered by the server (public values only - no secrets) -->
@@ -244,7 +244,7 @@
     try {
       const res = await report("start-requested");
       if (!res.ok) {
-        showError("intro-error", "This interview link can't start a new call. Please reload the page or contact us on WhatsApp.");
+        showError("intro-error", "This interview link can't start a new call. Please reload the page or reply to your invitation email.");
         return;
       }
     } catch {
@@ -288,7 +288,7 @@
       }
       // Vapi also emits "error" when the server ends the call normally (goodbye, silence
       // timeout), right before "call-end". Only treat it as a drop if call-end never arrives.
-      setTimeout(() => finish("Your call was interrupted. If you didn't finish, we'll send you a new link on WhatsApp."), 4000);
+      setTimeout(() => finish("Your call was interrupted. If you didn't finish, we'll email you a new link."), 4000);
     });
 
     try {

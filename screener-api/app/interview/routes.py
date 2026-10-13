@@ -138,7 +138,7 @@ async def interview_page(
         return _message_page(
             request,
             "Link expired",
-            "This interview link has expired. Please reply to our WhatsApp message and we'll send you a new one.",
+            "This interview link has expired. Please reply to your invitation email and we'll send you a new one.",
             410,
         )
     if state == "attempts_used":

@@ -1,0 +1,66 @@
+# CI: every push / pull request must pass these checks.
+# Deployment is pull-based: the server (deploy/auto-deploy.sh) only deploys a commit of
+# `main` after ALL check runs of this workflow succeeded for that exact commit.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests & lint (Python 3.12)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: screener-api
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: screener-api/requirements*.txt
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Lint (ruff)
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Tests (pytest, mocked LLM - no API keys needed)
+        run: pytest -q
+
+  infra:
+    name: Docker image & deploy config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the API image
+        run: docker build -t screener-api:ci screener-api
+      - name: Validate Docker Compose (dev + prod)
+        run: |
+          cp .env.example .env   # placeholders only - compose needs the variables to exist
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile tunnel config -q
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile prod config -q
+      - name: Validate Caddyfiles
+        run: |
+          for f in Caddyfile Caddyfile.dev; do
+            docker run --rm -e DOMAIN=example.com -e ACME_EMAIL=ci@example.com \
+              -v "$PWD/$f:/etc/caddy/Caddyfile:ro" caddy:2.11.7-alpine \
+              caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          done
+      - name: Lint shell scripts (shellcheck)
+        run: shellcheck -S warning deploy/*.sh postgres/init/*.sh
+      - name: n8n workflow JSON is up to date
+        run: |
+          python3 scripts/n8n_workflows.py build
+          git diff --exit-code -- n8n/workflows/ || (echo "Run: python scripts/n8n_workflows.py build" && exit 1)
