@@ -2,7 +2,7 @@
   "name": "5 - Process evaluation result",
   "nodes": [
     {
-      "id": "78ea360c-5dd9-4338-bfab-03ad03cbb9a5",
+      "id": "167d22db-15c7-56d7-9c3c-0a2ddcffc442",
       "name": "When called by another workflow",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -15,7 +15,7 @@
       }
     },
     {
-      "id": "97b96d81-56e1-47f5-bd52-e42befa62006",
+      "id": "82f24b04-4815-5000-abe2-76170e286a83",
       "name": "Plan notifications",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -28,7 +28,7 @@
       }
     },
     {
-      "id": "eba5f08f-916e-44d3-b7e9-3841a78fed0d",
+      "id": "419416e8-98bd-523f-97ea-bc5a0c9aae49",
       "name": "Route",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
@@ -49,7 +49,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "a1361bfc-0678-40a7-977c-bd41266c7dce",
+                    "id": "f2e14142-0b50-5f80-a94b-9de32a7ef1ca",
                     "leftValue": "={{ $json.channel }}",
                     "rightValue": "sheet",
                     "operator": {
@@ -73,7 +73,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "5d3b5d08-b865-4f90-b592-8caf1740cb47",
+                    "id": "82c7f714-dfea-5c22-8e9f-44d51d3c5ae0",
                     "leftValue": "={{ $json.channel }}",
                     "rightValue": "whatsapp",
                     "operator": {
@@ -97,7 +97,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "a8daffe3-ca20-4b8b-8a38-288e5ba4b24a",
+                    "id": "f82c42a7-5451-5324-9d9c-9ca910734917",
                     "leftValue": "={{ $json.channel }}",
                     "rightValue": "email",
                     "operator": {
@@ -121,7 +121,7 @@
                 },
                 "conditions": [
                   {
-                    "id": "a1b3a1f0-a496-41af-8678-0e6beb48a311",
+                    "id": "74a6b683-624e-58fb-89be-680d77bf9bbe",
                     "leftValue": "={{ $json.channel }}",
                     "rightValue": "reinvite",
                     "operator": {
@@ -141,7 +141,7 @@
       }
     },
     {
-      "id": "b2bd884b-3960-4c3f-859e-3aad9b9ca898",
+      "id": "24ba9c33-dc18-5d8f-a765-09f15958d0d3",
       "name": "Sheet fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -154,7 +154,7 @@
       }
     },
     {
-      "id": "d40699b7-4bfe-49f4-b192-d7b92c25ddcb",
+      "id": "8ad67895-5975-506d-8c62-04860272f5dc",
       "name": "Update sheet",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -340,7 +340,7 @@
       }
     },
     {
-      "id": "4ffa9392-08b1-4081-8eeb-8d6ef4a2f2bf",
+      "id": "fbdb1418-562c-5dba-9510-10fe14254ed2",
       "name": "Send WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -378,7 +378,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "c2f5eddc-e4e9-4928-83ee-c38dc529d9a4",
+      "id": "0fe138d9-6ebd-56c7-991a-beb7a087b3a9",
       "name": "Send email",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
@@ -409,7 +409,7 @@
       }
     },
     {
-      "id": "4ae44251-3c15-452c-939a-49d92cd0b863",
+      "id": "619801e8-99c7-542f-a369-e7264c73974f",
       "name": "New interview link",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -441,7 +441,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "1159f819-6625-4aac-ba84-ba3020a89d0a",
+      "id": "ea6b0408-fe2e-5a3b-a1be-26e0c2038f47",
       "name": "Re-invite message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -455,7 +455,7 @@
       }
     },
     {
-      "id": "70283c53-22eb-4d75-8425-d661b05423f4",
+      "id": "178a0309-4b80-5b6b-bf95-359e388f4a74",
       "name": "WhatsApp re-invite?",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
@@ -473,7 +473,7 @@
           },
           "conditions": [
             {
-              "id": "8150bc13-4b73-4ed8-95f8-bc7ac42e8287",
+              "id": "00000000-0000-4000-8000-000000000001",
               "leftValue": "={{ !!($json.wa) }}",
               "rightValue": "",
               "operator": {
@@ -489,7 +489,7 @@
       }
     },
     {
-      "id": "6a1ccfd6-8241-49f4-a443-76ecbaf437da",
+      "id": "6783e7b7-af38-5566-8bf3-9d7f8e1b24ee",
       "name": "Send re-invite",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -527,7 +527,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "32b46423-22af-4b38-9340-41408edbb4a1",
+      "id": "499329cf-ad3b-5985-a85f-32864f9dc068",
       "name": "Email re-invite?",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
@@ -545,7 +545,7 @@
           },
           "conditions": [
             {
-              "id": "b8832775-6d26-41be-8bbe-c352cc6664df",
+              "id": "00000000-0000-4000-8000-000000000001",
               "leftValue": "={{ !!($json.email) }}",
               "rightValue": "",
               "operator": {
@@ -561,7 +561,7 @@
       }
     },
     {
-      "id": "a3338b33-d596-415f-94e6-dd1e06528d82",
+      "id": "97016c95-2eb3-5c56-8ccd-929005d67543",
       "name": "Email re-invite",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
@@ -592,7 +592,7 @@
       }
     },
     {
-      "id": "6e81f957-2bc2-40d6-a341-fa9e88ebbfff",
+      "id": "b9b9f081-e534-5c12-ad7a-e57d7b0d0f80",
       "name": "Re-invite sheet fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -605,7 +605,7 @@
       }
     },
     {
-      "id": "974d551f-0192-45cf-9223-faab8af833ee",
+      "id": "a216af4c-df11-5085-b4c8-aded039de7c2",
       "name": "Update sheet (re-invited)",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,

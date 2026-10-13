@@ -2,7 +2,7 @@
   "name": "1 - Invite new candidates",
   "nodes": [
     {
-      "id": "8bc3b666-b12b-4371-bf18-0063d7da525a",
+      "id": "f8e77274-20bf-5034-9b70-94ca4af0ff3c",
       "name": "Every 5 minutes",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -22,7 +22,7 @@
       }
     },
     {
-      "id": "c1360fa9-7278-4582-8d90-faacccd3f9ca",
+      "id": "560b5504-fbc5-561b-bf0e-21ced52373d8",
       "name": "Get new candidates",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
@@ -63,7 +63,7 @@
       }
     },
     {
-      "id": "7a1e7482-0fc1-4588-9bda-19c7e05bca45",
+      "id": "123d6986-8494-5576-b5a3-c1336cf8cd97",
       "name": "Create interview link",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -95,7 +95,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "af91ba6f-b2ff-41ff-baeb-8be8aa4d9dd6",
+      "id": "901201c1-8952-56bf-914f-98576743338c",
       "name": "Build invite",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -109,7 +109,7 @@
       }
     },
     {
-      "id": "f5951bd7-1a2f-4496-b1f4-9d08e86ac724",
+      "id": "b2ed2ab9-0b49-5b62-91ba-ec617e4d4f10",
       "name": "WhatsApp invite?",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
@@ -127,7 +127,7 @@
           },
           "conditions": [
             {
-              "id": "61f5b73e-c42d-4e6c-8fb0-7c6e776ac4aa",
+              "id": "00000000-0000-4000-8000-000000000001",
               "leftValue": "={{ !!($json.wa) }}",
               "rightValue": "",
               "operator": {
@@ -143,7 +143,7 @@
       }
     },
     {
-      "id": "f0dc9aea-c399-4d29-ba86-bc7cfe410493",
+      "id": "de25114e-a085-5190-8c7e-8b0f3062fb13",
       "name": "Send WhatsApp invite",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -181,7 +181,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "be7bcc11-f6d5-4a04-9d43-87bb8e1d119e",
+      "id": "ce39904f-3014-5f46-8c93-fbe3edc13f94",
       "name": "Email invite?",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
@@ -199,7 +199,7 @@
           },
           "conditions": [
             {
-              "id": "d0a6bd83-c6b9-4450-a483-fdf65218db12",
+              "id": "00000000-0000-4000-8000-000000000001",
               "leftValue": "={{ !!($json.email) }}",
               "rightValue": "",
               "operator": {
@@ -215,7 +215,7 @@
       }
     },
     {
-      "id": "d603dc79-4711-477a-ba8b-bb43d8465792",
+      "id": "dca7be5c-f53f-5521-bee3-0348d7f91985",
       "name": "Send email invite",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
@@ -246,7 +246,7 @@
       }
     },
     {
-      "id": "c38c9f7a-1e6d-4190-8716-b014011a8334",
+      "id": "3fa204ae-e384-50a1-8583-04a1c2b182ab",
       "name": "Sheet fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -259,7 +259,7 @@
       }
     },
     {
-      "id": "5a0ac0b5-5100-48ba-85e7-4858254361ad",
+      "id": "165b1dae-9589-5cac-8ce1-cdb220377dc1",
       "name": "Update sheet",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,

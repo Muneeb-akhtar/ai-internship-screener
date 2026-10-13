@@ -2,7 +2,7 @@
   "name": "4 - Inbound WhatsApp messages",
   "nodes": [
     {
-      "id": "95236a77-3106-498a-85f2-a3fe950dda72",
+      "id": "26b5af87-a736-53d1-bbba-0e34af106265",
       "name": "Inbound message (from API)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -19,7 +19,7 @@
       "webhookId": "3493cfea-e2a4-5075-a1ec-8cba2351bfe7"
     },
     {
-      "id": "b67115a2-b453-4b90-b181-fdca07c0f774",
+      "id": "327dcc04-9b9b-5692-abe8-586fffff655e",
       "name": "Plan reply",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -33,7 +33,7 @@
       }
     },
     {
-      "id": "e464b765-5dd9-4222-8049-9209821626b5",
+      "id": "cf658b2c-5464-5ff4-a02b-2328ad435840",
       "name": "Respond",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -50,7 +50,7 @@
       }
     },
     {
-      "id": "e255d84b-7fc2-4a67-82a8-809996f68976",
+      "id": "7ecc4596-2706-523d-9122-ccf74c67eb2f",
       "name": "Anything to send?",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
@@ -68,7 +68,7 @@
           },
           "conditions": [
             {
-              "id": "a739c203-5458-4487-ae4c-e60bf1ed764d",
+              "id": "00000000-0000-4000-8000-000000000001",
               "leftValue": "={{ !!$('Plan reply').item.json.wa }}",
               "rightValue": "",
               "operator": {
@@ -84,7 +84,7 @@
       }
     },
     {
-      "id": "daa9410e-58a8-4251-bdc8-7ea83caac950",
+      "id": "ff231d2a-124e-598b-a7ba-6cac3069b379",
       "name": "Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -97,7 +97,7 @@
       }
     },
     {
-      "id": "384c71a7-fc80-403a-b77f-2c034ce89f2c",
+      "id": "ae0bc420-c0d5-569b-92a6-3cac27de8183",
       "name": "Send WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,

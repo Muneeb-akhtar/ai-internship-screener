@@ -93,7 +93,8 @@ class WF:
         if pos is None:
             self._x += 240
             pos = (self._x, 300)
-        node = {"id": str(uuid.uuid4()), "name": name, "type": type_, "typeVersion": version,
+        # Deterministic ids: rebuilding gives identical JSON (CI checks the exports are current)
+        node = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, f"{self.name}/{name}")), "name": name, "type": type_, "typeVersion": version,
                 "position": list(pos), "parameters": params, **extra}
         if creds:
             node["credentials"] = creds
@@ -163,6 +164,8 @@ def http(method: str, url: str, *, json_body: str | None = None, api_key: bool =
     return p
 
 
+# Every IF/Filter/Switch condition here has a single rule, so a constant id is fine
+COND_ID = "00000000-0000-4000-8000-000000000001"
 RETRY = {"retryOnFail": True, "maxTries": 3, "waitBetweenTries": 3000}
 WA_URL = "=https://graph.facebook.com/{{ $env.META_GRAPH_VERSION || 'v25.0' }}/{{ $env.META_WA_PHONE_NUMBER_ID }}/messages"
 
@@ -175,7 +178,8 @@ def wa_send(wf: WF, name: str, pos: tuple[int, int]) -> str:
 
 def switch_on(field: str, keys: list[str]) -> dict:
     rules = [{"conditions": {"options": {"caseSensitive": True, "leftValue": "", "typeValidation": "loose", "version": 2},
-                             "conditions": [{"id": str(uuid.uuid4()), "leftValue": f"={{{{ $json.{field} }}}}",
+                             "conditions": [{"id": str(uuid.uuid5(uuid.NAMESPACE_URL, f"rule/{field}/{k}")),
+                                             "leftValue": f"={{{{ $json.{field} }}}}",
                                              "rightValue": k, "operator": {"type": "string", "operation": "equals"}}],
                              "combinator": "and"},
               "renameOutput": True, "outputKey": k} for k in keys]
@@ -186,7 +190,7 @@ def only_if(wf: WF, name: str, expr: str, pos: tuple[int, int]) -> str:
     """Filter node: lets an item through only when `expr` (a JS expression) is truthy."""
     return wf.add(name, "n8n-nodes-base.filter", 2.2, {
         "conditions": {"options": {"caseSensitive": True, "leftValue": "", "typeValidation": "loose", "version": 2},
-                       "conditions": [{"id": str(uuid.uuid4()), "leftValue": f"={{{{ !!({expr}) }}}}", "rightValue": "",
+                       "conditions": [{"id": COND_ID, "leftValue": f"={{{{ !!({expr}) }}}}", "rightValue": "",
                                        "operator": {"type": "boolean", "operation": "true", "singleValue": True}}],
                        "combinator": "and"}, "options": {}}, pos=pos)
 
@@ -411,14 +415,14 @@ return { json: {
 """, each=True), pos=(240, 300))
     auth = wf.add("Authorized?", "n8n-nodes-base.if", 2.2, {
         "conditions": {"options": {"caseSensitive": True, "leftValue": "", "typeValidation": "loose", "version": 2},
-                       "conditions": [{"id": str(uuid.uuid4()), "leftValue": "={{ $json.authorized }}", "rightValue": "",
+                       "conditions": [{"id": COND_ID, "leftValue": "={{ $json.authorized }}", "rightValue": "",
                                        "operator": {"type": "boolean", "operation": "true", "singleValue": True}}],
                        "combinator": "and"}, "options": {}}, pos=(480, 300))
     ok = respond(wf, "200 OK", 200, (720, 200))
     deny = respond(wf, "401 Unauthorized", 401, (720, 420))
     rel = wf.add("End-of-call report?", "n8n-nodes-base.filter", 2.2, {
         "conditions": {"options": {"caseSensitive": True, "leftValue": "", "typeValidation": "loose", "version": 2},
-                       "conditions": [{"id": str(uuid.uuid4()), "leftValue": "={{ $('Verify & parse').item.json.relevant }}",
+                       "conditions": [{"id": COND_ID, "leftValue": "={{ $('Verify & parse').item.json.relevant }}",
                                        "rightValue": "", "operator": {"type": "boolean", "operation": "true", "singleValue": True}}],
                        "combinator": "and"}, "options": {}}, pos=(960, 200))
     find = wf.add("Find candidate", "n8n-nodes-base.googleSheets", 4.7,
@@ -466,7 +470,7 @@ def wf_review(creds: dict, process_id: str) -> WF:
     hook = webhook(wf, "HR review (from API)", "hr-review", (0, 300))
     auth = wf.add("Internal call?", "n8n-nodes-base.if", 2.2, {
         "conditions": {"options": {"caseSensitive": True, "leftValue": "", "typeValidation": "loose", "version": 2},
-                       "conditions": [{"id": str(uuid.uuid4()), "leftValue": "={{ $json.headers['x-api-key'] }}",
+                       "conditions": [{"id": COND_ID, "leftValue": "={{ $json.headers['x-api-key'] }}",
                                        "rightValue": "={{ $env.SCREENER_API_KEY }}",
                                        "operator": {"type": "string", "operation": "equals"}}],
                        "combinator": "and"}, "options": {}}, pos=(240, 300))
@@ -484,7 +488,7 @@ return { json: { ok: false, wa: text(waNumber(req.from), `Could not apply "${req
 """, each=True), pos=(960, 200))
     applied = wf.add("Applied?", "n8n-nodes-base.if", 2.2, {
         "conditions": {"options": {"caseSensitive": True, "leftValue": "", "typeValidation": "loose", "version": 2},
-                       "conditions": [{"id": str(uuid.uuid4()), "leftValue": "={{ $json.ok }}", "rightValue": "",
+                       "conditions": [{"id": COND_ID, "leftValue": "={{ $json.ok }}", "rightValue": "",
                                        "operator": {"type": "boolean", "operation": "true", "singleValue": True}}],
                        "combinator": "and"}, "options": {}}, pos=(1200, 200))
     find = wf.add("Find candidate", "n8n-nodes-base.googleSheets", 4.7,
@@ -527,7 +531,7 @@ return { json: { ok, wa } };
                    "options": {"responseCode": "={{ $json.ok ? 200 : 401 }}"}}, pos=(480, 300))
     has = wf.add("Anything to send?", "n8n-nodes-base.filter", 2.2, {
         "conditions": {"options": {"caseSensitive": True, "leftValue": "", "typeValidation": "loose", "version": 2},
-                       "conditions": [{"id": str(uuid.uuid4()), "leftValue": "={{ !!$('Plan reply').item.json.wa }}",
+                       "conditions": [{"id": COND_ID, "leftValue": "={{ !!$('Plan reply').item.json.wa }}",
                                        "rightValue": "", "operator": {"type": "boolean", "operation": "true", "singleValue": True}}],
                        "combinator": "and"}, "options": {}}, pos=(720, 300))
     prep = wf.add("Message", "n8n-nodes-base.code", 2,
