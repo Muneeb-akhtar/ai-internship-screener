@@ -204,7 +204,11 @@ Running record of the build so any new session (human or AI) can pick up where w
 - README (diagrams, screenshots, highlights, security), `docs/DEMO.md` (video script + free recording tools), `docs/PORTFOLIO.md`
   (resume bullets + LinkedIn post), MIT license. Candidate-facing text says email instead of WhatsApp.
 
-### Next steps
+### 2026-10-14: v1.0.0 released — project complete
+- Release https://github.com/Muneeb-akhtar/ai-internship-screener/releases/tag/v1.0.0. CI green on main; live site healthy.
+- The owner's home IP changed → SSH is blocked by `screener-sg` (site + auto-deploy unaffected). To SSH: set the rule to "My IP".
+
+### Next steps (optional, owner)
 1. Owner records the 2–3 min demo video (docs/DEMO.md), uploads it unlisted → put the link in README.
 2. Owner: Budget alert + optionally regenerate the DuckDNS token.
 3. Open decision: near-threshold rejects → human review?
